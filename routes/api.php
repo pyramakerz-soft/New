@@ -63,6 +63,9 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post("TeacherAssignmentFilter", [TeachersController::class, "TeacherAssignmentFilter"])->name("TeacherAssignmentFilter");
     Route::post("teacherClasses", [TeachersController::class, "teacherClasses"])->name("teacherClasses");
     Route::post("game", [GameController::class, "game"])->name("game");
+
+    Route::post("gameType", [GameController::class, "gameType"])->name("gameType");
+    
     Route::post("gamebyId", [GameController::class, "gamebyId"])->name("gamebyId");
     Route::post("add_assignment_to_group", [TeachersController::class, "addAssignmentToGroup"])->name("add_assignment_to_group");
     Route::post("student_stats", [TeachersController::class, "StudentStats"])->name("student_stats");
