@@ -69,6 +69,7 @@ class StudentAssignmentResource extends JsonResource
                 if ($status !== 1 && $dueDate < Carbon::now()->format('Y-m-d')) {
                     if(!$dueDate)
                     $dueDateCarbon = Carbon::createFromFormat('Y-m-d', '2029-05-5');
+                else
                     $dueDateCarbon = Carbon::createFromFormat('Y-m-d', $dueDate);
                     $daysDifference = $dueDateCarbon->diffInDays(Carbon::now());
                 }

@@ -194,7 +194,7 @@ public function studentPrograms_test(Request $request)
     // Initialize query builder
     $query = StudentTest::with('tests')->where('student_id', auth()->user()->id);
 
-    if ($request->filled('future')) {
+    if ($request->filled('future') && $request->future != NULL) {
         if ($request->future == 1) {
             // No additional conditions needed
         } elseif ($request->future == 0) {
@@ -205,14 +205,14 @@ public function studentPrograms_test(Request $request)
     }
 
     // Filter by from and to date if provided
-    if ($request->filled(['from_date', 'to_date'])) {
+    if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
         $fromDate = $request->from_date;
         $toDate = $request->to_date;
         $query->whereBetween('due_date', [$fromDate, $toDate]);
     }
 
     // Filter by program ID if provided
-    if ($request->filled('program_id')) {
+    if ($request->filled('program_id') && $request->program_id != NULL) {
         $query->where('program_id', $request->program_id);
     }
     $allTests = $query->orderBy('due_date', 'DESC')->get();
@@ -231,7 +231,7 @@ public function studentPrograms_test(Request $request)
     $pendingPercentage = $totalAllTests > 0 ? round(($pendingCount / $totalAllTests) * 100 ,2) : 0;
 
     // Filter by status if provided
-    if ($request->filled('status')) {
+    if ($request->filled('status') && $request->status != NULL) {
         $now = \Carbon\Carbon::now();
         $status = $request->status;
         switch ($status) {
@@ -252,7 +252,7 @@ public function studentPrograms_test(Request $request)
     }
 
     // Filter by assignment types if provided
-    if ($request->filled('types')) {
+    if ($request->filled('types') && $request->types != NULL) {
         $assignmentTypes = $request->types;
         $query->whereHas('tests', function ($q) use ($assignmentTypes) {
             $q->join('test_types', 'tests.type', '=', 'test_types.id')
