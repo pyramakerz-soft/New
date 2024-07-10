@@ -423,7 +423,7 @@ $data['progress'] = $progress->select('student_progress.*')->get();
                     $progressQuery->join('tests', 'student_progress.test_id', '=', 'tests.id')
                                   ->where('tests.type', $type);
                 }
-            
+             
                 // Filter by date range if provided
                 if ($request->filled('from_date') && $request->filled('to_date')) {
                     $from_date = Carbon::parse($request->from_date)->startOfDay();
