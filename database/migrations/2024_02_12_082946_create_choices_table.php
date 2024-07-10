@@ -8,26 +8,22 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('choices', function (Blueprint $table) {
-            $table->id();
-            $table->bigInteger('question_id')->nullable()->unsigned();
-            $table->foreign('question_id')->references('id')->on('questions')->onDelete('cascade');
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('question_id')->nullable()->index('choices_question_id_foreign');
             $table->text('choice');
+            $table->integer('is_correct')->nullable()->default(0);
             $table->timestamps();
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('choices');
     }

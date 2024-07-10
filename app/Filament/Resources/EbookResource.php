@@ -54,8 +54,12 @@ class EbookResource extends Resource
                 //         'ppt' => 'PPT',
                 //     ])
                 //     ->searchable(),
-                Checkbox::make('is_downloadable')
-                    ->label('Downloadable'),
+                Select::make('is_downloadable')->label('Downloadable')
+                ->options([
+                    'true' => 'True',
+                    'false' => 'False',
+                ])
+                ->searchable(),
             ]);
     }
 
