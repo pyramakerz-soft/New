@@ -7,6 +7,8 @@
 /vendor
 /FullBKUP
 /gitpull
+/app/Providers/RouteServiceProvider.php
+/config/livewire.php
 .env
 .env.backup
 .env.production
