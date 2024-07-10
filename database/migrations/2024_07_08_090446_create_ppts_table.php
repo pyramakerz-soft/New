@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->foreignId('unit_id')->constrained()->onDelete('cascade');
             $table->enum('file_type', ['pdf', 'word', 'ppt'])->nullable();
 
-            $table->boolean('is_downloadable')->default(false);
+            $table->enum('is_downloadable', ['true', 'false'])->default('false');
 
             $table->timestamps();
         });

@@ -8,30 +8,25 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('game_images', function (Blueprint $table) {
-            $table->id();
-            $table->bigInteger('game_id')->nullable()->unsigned();
-            $table->foreign('game_id')->references('id')->on('games')->onDelete('cascade');
-            $table->bigInteger('game_letter_id')->nullable()->unsigned();
-            $table->foreign('game_letter_id')->references('id')->on('game_letters')->onDelete('cascade');
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('game_id')->nullable()->index('game_images_game_id_foreign');
+            $table->unsignedBigInteger('game_letter_id')->nullable()->index('game_images_game_letter_id_foreign');
             $table->integer('index')->nullable();
             $table->text('image')->nullable();
-            $table->text('word')->nullable();
+            $table->text('word');
             $table->timestamps();
+            $table->tinyInteger('correct')->nullable()->default(0);
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('game_images');
     }

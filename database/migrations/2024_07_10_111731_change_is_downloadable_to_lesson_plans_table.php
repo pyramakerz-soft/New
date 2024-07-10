@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ppts', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('unit_id')->nullable()->index('ppts_unit_id_foreign');
-            $table->string('file_link');
-            $table->timestamps();
+        Schema::table('lesson_plans', function (Blueprint $table) {
+            $table->enum('is_downloadable', ['true', 'false'])->default('false')->change();
+
         });
     }
 
@@ -24,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ppts');
+        Schema::table('lesson_plans', function (Blueprint $table) {
+            //
+        });
     }
 };

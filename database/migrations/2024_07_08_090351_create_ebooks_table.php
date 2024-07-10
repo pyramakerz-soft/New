@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('file_path')->nullable();
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
             $table->foreignId('unit_id')->constrained()->onDelete('cascade');
-            $table->boolean('is_downloadable')->default(false);
+            $table->enum('is_downloadable', ['true', 'false'])->default('false');
             $table->enum('file_type', ['pdf', 'word', 'ppt'])->nullable();
 
 
