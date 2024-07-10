@@ -14,4 +14,9 @@ class GameSkills extends Model
     {
         return $this->belongsTo(GameType::class);
     }
+
+    public function skill()
+    {
+        return $this->belongsTo(Skills::class);
+    }
 }

@@ -408,8 +408,8 @@ $data['progress'] = $progress->select('student_progress.*')->get();
                 $studentId = $request->student_id;
             
                 // Initialize query builder with student ID and program ID
-                $progressQuery = StudentProgress::where('student_id', $studentId);
-                                            // ->where('program_id', $request->program_id);
+                $progressQuery = StudentProgress::where('student_id', $studentId)
+                                            ->where('program_id', $request->program_id);
             
                 // Filter by month of created_at date if provided
                 if ($request->filled('month')) {
@@ -566,7 +566,11 @@ $data['progress'] = $progress->select('student_progress.*')->get();
                 return $this->returnData('data', $data, 'Student Progress');
             }
             public function masteryReport(Request $request){
-                
+                $student_progress = StudentProgress::where('student_id',$request->student_id)->where('program_id',$request->program_id)->get();
+                foreach($student_progress as $progress){
+                    $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
+                    dd($test);
+                }
             }
             public function numOfTrialsReport(Request $request){
                 

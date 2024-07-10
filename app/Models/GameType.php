@@ -13,5 +13,9 @@ class GameType extends Model
     {
         return $this->belongsTo(Lesson::class);
     }
+        public function skills()
+    {
+        return $this->hasMany(GameSkills::class);
+    }
 
 }
