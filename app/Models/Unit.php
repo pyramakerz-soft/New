@@ -18,5 +18,9 @@ class Unit extends Model
     {
         return $this->hasMany(Lesson::class, 'unit_id');
     }
+     public function  getImageAttribute($val)
+    {
+        return ($val !== null) ? asset('storage/' . $val) : "";
+    }
 
 }

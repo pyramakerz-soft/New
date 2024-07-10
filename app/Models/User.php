@@ -69,7 +69,6 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(School::class, 'school_id');
     }
- 
     public function role()
     {
         return $this->belongsTo(Role::class);
@@ -119,5 +118,8 @@ class User extends Authenticatable implements JWTSubject
         }
         return false;
     }
-
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
+    }
 }

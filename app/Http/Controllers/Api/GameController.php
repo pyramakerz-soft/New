@@ -9,6 +9,7 @@ use App\Models\StudentDegree;
 use App\Models\UserDetails;
 use Illuminate\Http\Request;
 use App\Traits\HelpersTrait;
+use App\Http\Resources\GameTypesResource;
 use Illuminate\Support\Facades\Auth;
 
 class GameController extends Controller
@@ -40,7 +41,10 @@ class GameController extends Controller
     public function game(Request $request)
     {
         $user_id = Auth::user()->id;
+        if(auth()->user()->role != 1)
         $userStage = UserDetails::where('user_id', $user_id)->select('stage_id')->first()->stage_id;
+        
+        if(auth()->user()->role != 1)
         $data['games'] = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit'])
             ->where('lesson_id', $request->lesson_id)
             ->orderBy('prev_game_id', 'asc')
@@ -50,26 +54,24 @@ class GameController extends Controller
             ->where('programs.stage_id', $userStage)
             ->select('games.*')
             ->get();
-        $data['types'] = GameType::all();
-        return $this->returnData('data', $data, "Game");
-    }
-    public function gameType(Request $request)
-    {
-        $user_id = Auth::user()->id;
-        $userStage = UserDetails::where('user_id', $user_id)->select('stage_id')->first()->stage_id;
+            else
         $data['games'] = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit'])
             ->where('lesson_id', $request->lesson_id)
             ->orderBy('prev_game_id', 'asc')
             ->join('lessons', 'lessons.id', 'games.lesson_id')
             ->join('units', 'units.id', 'lessons.unit_id')
             ->join('programs', 'programs.id', 'units.program_id')
-            ->where('programs.stage_id', $userStage)
+            // ->where('programs.stage_id', $userStage)
             ->select('games.*')
-            ->distinct('name')
             ->get();
+            
+            
         $data['types'] = GameType::all();
+            // $data['gameTypes'] = GameTypesResource::make($data['games']);
+            
         return $this->returnData('data', $data, "Game");
     }
+
 
     /**
      * @OA\Post(
@@ -104,14 +106,22 @@ class GameController extends Controller
     public function gamebyId(Request $request)
     {
         $user_id = Auth::user()->id;
+        // if(auth()->user()->role != 1)
         $userStage = UserDetails::where('user_id', $user_id)->select('stage_id')->first()->stage_id;
+
+        
+        if($request->filled('game_id')){
         $game = Game::with(['gameImages', 'gameLetters', 'gameTypes'])->where('id', $request->game_id)->first();
         if (!$game) {
             return response()->json(['message' => 'Game not found'], 404);
         }
+        }elseif($request->filled('lesson_id') && !$request->filled('game_id')){
+            $game = Game::with(['gameImages', 'gameLetters', 'gameTypes'])->where('lesson_id', $request->lesson_id)->first();
+        }
         $gameTypeName = $game->gameTypes->name;
         $audioFlag = $game->audio_flag;
-        $games = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit', 'studentDegrees'])
+        // if(auth()->user()->role != 1)
+        $games = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])
             ->whereHas('gameTypes', function ($query) use ($gameTypeName) {
                 $query->where('name', $gameTypeName);
             })->where('lesson_id', $request->lesson_id)->where('audio_flag', $audioFlag)
@@ -121,6 +131,18 @@ class GameController extends Controller
             ->where('programs.stage_id', $userStage)
             ->select('games.*')
             ->get();
+        //     else
+        // $games = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])
+        //     ->whereHas('gameTypes', function ($query) use ($gameTypeName) {
+        //         $query->where('name', $gameTypeName);
+        //     })->where('lesson_id', $request->lesson_id)->where('audio_flag', $audioFlag)
+        //     ->join('lessons', 'lessons.id', 'games.lesson_id')
+        //     ->join('units', 'units.id', 'lessons.unit_id')
+        //     ->join('programs', 'programs.id', 'units.program_id')
+        //     // ->where('programs.stage_id', $userStage)
+        //     ->select('games.*')
+        //     ->get();
+            
         $data['games'] = $games;
         $data['types'] = GameType::all();
         return $this->returnData('data', $data, "Game");
@@ -182,8 +204,8 @@ class GameController extends Controller
      */
     public function solveData(Request $request)
     {
-        foreach ($request->game_id as $game_id) {
-            if (StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->count() > 0) {
+        foreach($request->game_id as $game_id) {
+            if(StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->count() > 0) {
                 $new = StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->first();
                 $new->game_id = $game_id;
                 $new->stars = $request->stars;
@@ -197,6 +219,6 @@ class GameController extends Controller
                 $new->save();
             }
         }
-        return $this->returnData('data', $new, "Game Completed");
+        return $this->returnData('data', $new , "Game Completed");
     }
 }

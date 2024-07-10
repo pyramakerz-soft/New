@@ -163,7 +163,8 @@ class AuthController extends Controller
      *         )
      *     )
      * )
-     */    public function loginTeacher(Request $request)
+     */ 
+     public function loginTeacher(Request $request)
     {
         $validate = Validator::make($request->all(), [
             'email' => 'required',
@@ -199,26 +200,36 @@ class AuthController extends Controller
 
         $data['user'] = User::with(['school'])->where('email', $request->email)->first();
         $loc = asset('storage/');
-        $data['programs'] = TeacherProgram::select(
-            'programs.id',
-            'courses.name',
-            DB::raw("CONCAT('$loc/', programs.image) AS image")
-        )
-            ->join('programs', 'teacher_programs.program_id', 'programs.id')
-            ->join('courses', 'programs.course_id', 'courses.id')
-            ->groupBy('programs.id', 'courses.name', 'image')
-            ->where('teacher_id', $data['user']->id)
-            ->get();
-
-        $data['grades'] = TeacherProgram::with(['stage'])
-            ->where('teacher_id', $data['user']->id)
-            ->get()
-            ->unique('stage.id')
-            ->values();
+        // $data['programs'] =  TeacherProgram::with(['program.units.lessons' , 'stage'])->where('teacher_id', $data['user']->id)->get();
+         $data['program_data'] = TeacherProgram::with(['program.units.lessons', 'stage'])
+        ->where('teacher_id', $data['user']->id)
+        
+        ->get()
+        ->map(function($teacherProgram) {
+            $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->stage->name;
+           $teacherProgram->image = $teacherProgram->program->image;
+            
+            return $teacherProgram ;
+        });
 
         $data['token'] = $token;
 
         return $this->returnData('data', $data, 'User Data to update');
+        
+                // $data['programs'] = TeacherProgram::select()
+        //     ->join('programs', 'teacher_programs.program_id', 'programs.id')
+        //     ->join('courses', 'programs.course_id', 'courses.id')
+        //     ->groupBy('programs.id', 'courses.name', 'image')
+        //     ->where('teacher_id', $data['user']->id)
+        //     ->get();
+
+        // $data['grades'] = TeacherProgram::with(['stage'])
+        //     ->where('teacher_id', $data['user']->id)
+        //     ->get()
+        //     ->unique('stage.id')
+        //     ->values();
+        
+        
     }
 
     /**

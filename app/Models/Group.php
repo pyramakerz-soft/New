@@ -23,7 +23,6 @@ class Group extends Model
     {
         return $this->belongsTo(User::class, 'teacher_id');
     }
-    
     public function student()
     {
         return $this->belongsTo(User::class);
@@ -43,5 +42,8 @@ class Group extends Model
     {
         return ($val !== null) ? asset('/storage/' . $val) : "";
     }
-
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
+    }
 }

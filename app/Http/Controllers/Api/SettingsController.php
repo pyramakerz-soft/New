@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LessonPlan;
-use App\Models\ppt;
+use App\Models\Ppt;
 use App\Models\ProfessionalDevelopment;
 use App\Models\Setting;
 use App\Models\TeacherEBook;
@@ -43,7 +43,7 @@ class SettingsController extends Controller
     }
     public function ppt( $id){
         
-        $data = ppt::where('unit_id' ,$id)->get();
+        $data = Ppt::where('unit_id' ,$id)->get();
         return $this->returnData('data', $data, "All Data");
 
     }

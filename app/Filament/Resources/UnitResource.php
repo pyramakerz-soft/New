@@ -48,6 +48,14 @@ class UnitResource extends Resource
                     ->searchable()
                     ->label("Program")
                     ->required(),
+                    Forms\Components\FileUpload::make('image')
+                    ->dehydrated(fn($state) => filled($state))
+                    ->required(fn(string $context): bool => $context == 'create')
+                    ->dehydrated(true)
+                    ->preserveFilenames()
+                    ->rules(['mimes:jpg,jpeg,png', 'max:10000'])
+
+                ,
                 Hidden::make('id'),
                 Forms\Components\TextInput::make('name')
                     ->required()

@@ -35,6 +35,10 @@ class Lesson extends Model
     {
         return $this->hasMany(Game::class);
     }
+        public function game_type(): HasMany
+    {
+        return $this->hasMany(GameType::class);
+    }
     public function tests(): HasMany
     {
         return $this->hasMany(Question::class);

@@ -7,9 +7,14 @@ use App\Filament\Resources\LessonPlanResource\RelationManagers;
 use App\Models\LessonPlan;
 use App\Models\Unit;
 use Filament\Forms;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\BooleanColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -25,6 +30,7 @@ class LessonPlanResource extends Resource
     {
         return $form
             ->schema([
+                TextInput::make('title')->required(),
                 Forms\Components\Select::make('unit_id')->label('Unit')
                 ->relationship('unit', 'name')
                 ->required()
@@ -38,9 +44,32 @@ class LessonPlanResource extends Resource
 
                 })
                 ->searchable(),
-                Forms\Components\TextInput::make('file_link')
+
+
+                Forms\Components\FileUpload::make('file_path')
+                ->label('File')
                     ->required()
-                    ->maxLength(255),
+                    ->dehydrated(fn($state) => filled($state))
+                    ->required(fn(string $context): bool => $context == 'create')
+                    ->dehydrated(true)
+                    ->preserveFilenames()
+                    ->directory('storage')
+                ->disk('public')
+                    ->acceptedFileTypes(['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+                    ->maxSize(5000)
+
+                ,
+
+                Select::make('category_id')->relationship('category', 'name')->required(),
+                Select::make('file_type')->label('Type')
+                ->options([
+                    'word' => 'Word',
+                    'pdf' => 'PDF',
+                    'ppt' => 'PPT',
+                ])
+                ->searchable(),
+                Checkbox::make('is_downloadable')
+                ->label('Downloadable'),
             ]);
     }
 
@@ -48,13 +77,12 @@ class LessonPlanResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('unit_id')
-                ->name('Unit.name')
-                    
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('file_link')
-                    ->searchable(),
-               
+                TextColumn::make('title'),
+                TextColumn::make('category.name')->label('Category'),
+                BooleanColumn::make('is_downloadable')
+                ->label('Downloadable')
+                ->sortable()
+                ->searchable(),
             ])
             ->filters([
                 //

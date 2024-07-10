@@ -43,12 +43,12 @@ class TeacherResource extends JsonResource
         // }
                 
         $arr['user'] =  User::where('id', $this->resource->id)->first();
-        $arr['programs'] = TeacherProgram::with(['program.units.lessons' , 'stage'])->where('teacher_id', $this->resource->id)->get()->map(function ($teacherProgram) {
-        return [
-            'program_name' => $teacherProgram->program_name,
-            'program' => $teacherProgram,
-        ];
-    });
+        $arr['program_data'] = TeacherProgram::with(['program.units.lessons' , 'stage'])->where('teacher_id', $this->resource->id)->get()->map(function($teacherProgram) {
+            $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->stage->name;
+           $teacherProgram->image = $teacherProgram->program->image;
+            
+            return $teacherProgram ;
+        });
  
         return $arr;
     }

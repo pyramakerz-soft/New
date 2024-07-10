@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProfessionalDevelopmentsController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StudentController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Api\UnitsController;
 use App\Http\Controllers\Api\TeachersController;
 use App\Http\Controllers\Api\GameController;
 
+use App\Http\Controllers\AssignmentController;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -34,9 +36,9 @@ Route::group(['namespace' => 'Api', 'prefix' => 'auth'], function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/confirm-phone', [AuthController::class, 'confirmPhone']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::group([ 'middleware' => 'auth:api'], function () {
-    Route::post('/updateProfile', [AuthController::class, 'updateProfile']);
-    Route::post('/makeParentPin', [AuthController::class, 'makeParentPin']);
+    Route::group(['middleware' => 'auth:api'], function () {
+        Route::post('/updateProfile', [AuthController::class, 'updateProfile']);
+        Route::post('/makeParentPin', [AuthController::class, 'makeParentPin']);
     });
 });
 
@@ -47,7 +49,7 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     // Route::get("units", [UnitsController::class, "units"])->name("units");
     Route::get("student-profile/{email}", [StudentController::class, "index"])->name("student-profile");
     Route::get("student_programs", [StudentController::class, "studentPrograms"])->name("student_programs");
-   Route::post("student_programs_test", [StudentController::class, "studentPrograms_test"])->name("student_programs_test");
+    Route::post("student_programs_test", [StudentController::class, "studentPrograms_test"])->name("student_programs_test");
 
     Route::get("lessons/{id}", [LessonController::class, "index"])->name("lessons");
     Route::get("lesson_questions/{id}", [LessonController::class, "lessonQuestions"])->name("lesson_questions");
@@ -63,19 +65,18 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post("TeacherAssignmentFilter", [TeachersController::class, "TeacherAssignmentFilter"])->name("TeacherAssignmentFilter");
     Route::post("teacherClasses", [TeachersController::class, "teacherClasses"])->name("teacherClasses");
     Route::post("game", [GameController::class, "game"])->name("game");
-
     Route::post("gameType", [GameController::class, "gameType"])->name("gameType");
-    
+
     Route::post("gamebyId", [GameController::class, "gamebyId"])->name("gamebyId");
     Route::post("add_assignment_to_group", [TeachersController::class, "addAssignmentToGroup"])->name("add_assignment_to_group");
     Route::post("student_stats", [TeachersController::class, "StudentStats"])->name("student_stats");
     Route::post("testQuestions", [TeachersController::class, "testQuestions"])->name("testQuestions");
     Route::post("solveData", [GameController::class, "solveData"])->name("solveData");
     Route::post("editGame/{game_id}/{assign_id}", [TeachersController::class, "editGame"])->name("editGame");
-    Route::get("settings", [SettingsController::class, 'index'])->name('getSettings');
-    Route::get("professional_development/{id}", [SettingsController::class, "professionalDevelopment"])->name("professional_development");
-    Route::get("teacher_book/{id}", [SettingsController::class, "teacherEBook"])->name("teacher_book");
-    Route::get("lesson_plan/{id}", [SettingsController::class, "lessonPlan"])->name("lesson_plan");
-    Route::get("ppt/{id}", [SettingsController::class, "ppt"])->name("ppt");
 
+
+    Route::get('categories', [CategoryController::class, 'index']);
+    Route::get('categories/{id}', [CategoryController::class, 'show']);
+    Route::get('categories/{id}/all-data', [CategoryController::class, 'getAllCategoryData']);
+    Route::post('/assignments', [AssignmentController::class, 'assign']);
 });
