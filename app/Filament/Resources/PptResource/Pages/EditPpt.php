@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\PptResource\Pages;
+namespace App\Filament\Resources\PPTResource\Pages;
 
-use App\Filament\Resources\PptResource;
+use App\Filament\Resources\PPTResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditPpt extends EditRecord
+class EditPPT extends EditRecord
 {
-    protected static string $resource = PptResource::class;
+    protected static string $resource = PPTResource::class;
 
     protected function getHeaderActions(): array
     {

@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Filament\Resources\PptResource\Pages;
+namespace App\Filament\Resources\PPTResource\Pages;
 
-use App\Filament\Resources\PptResource;
+use App\Filament\Resources\PPTResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 
-class CreatePpt extends CreateRecord
+class CreatePPT extends CreateRecord
 {
-    protected static string $resource = PptResource::class;
+    protected static string $resource = PPTResource::class;
 }

@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\PptResource\Pages;
+namespace App\Filament\Resources\PPTResource\Pages;
 
-use App\Filament\Resources\PptResource;
+use App\Filament\Resources\PPTResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
-class ListPpts extends ListRecords
+class ListPPTS extends ListRecords
 {
-    protected static string $resource = PptResource::class;
+    protected static string $resource = PPTResource::class;
 
     protected function getHeaderActions(): array
     {
