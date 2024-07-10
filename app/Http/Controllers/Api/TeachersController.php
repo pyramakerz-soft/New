@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-
+use App\Http\Resources\StudentAssignmentResource;
+use App\Http\Resources\TestResource;
+use App\Http\Resources\StudentProgressResource;
+use App\Http\Resources\TeacherAssignmentResource;
 use App\Models\Unit;
 use App\Models\Group;
 use App\Models\StudentTest;
@@ -13,8 +16,7 @@ use App\Models\GroupStudent;
 use App\Models\Test;
 use App\Models\Game;
 use App\Models\TestTypes;
-use App\Http\Resources\TeacherAssignmentResource;
-use App\Http\Resources\TestResource;
+
 use App\Http\Resources\TeacherAssignmentFilterResource;
 use Illuminate\Http\Request;
 use App\Traits\HelpersTrait;
@@ -395,8 +397,173 @@ $data['progress'] = $progress->select('student_progress.*')->get();
                 
             }
 
-            public function completionReport(Request $request){
+            public function completionReport(Request $request)
+            {
+                // Validate the request to ensure program_id is required
+                $request->validate([
+                    'student_id' => 'required|integer',
+                ]);
+            
+                // Get the authenticated student's ID
+                $studentId = $request->student_id;
+            
+                // Initialize query builder with student ID and program ID
+                $progressQuery = StudentProgress::where('student_id', $studentId);
+                                            // ->where('program_id', $request->program_id);
+            
+                // Filter by month of created_at date if provided
+                if ($request->filled('month')) {
+                    $month = $request->month;
+                    $progressQuery->whereMonth('student_progress.created_at', Carbon::parse($month)->month);
+                }
+            
+                // Filter by test_types if provided
+                if ($request->filled('type')) {
+                    $type = $request->type;
+                    $progressQuery->join('tests', 'student_progress.test_id', '=', 'tests.id')
+                                  ->where('tests.type', $type);
+                }
+            
+                // Filter by date range if provided
+                if ($request->filled('from_date') && $request->filled('to_date')) {
+                    $from_date = Carbon::parse($request->from_date)->startOfDay();
+                    $to_date = Carbon::parse($request->to_date)->endOfDay();
+                    $progressQuery->whereBetween('student_progress.created_at', [$from_date, $to_date]);
+                }
+            
+                // Filter by stars if provided
+                if ($request->filled('stars')) {
+                    $stars = (array) $request->stars;
+                    $progressQuery->whereIn('stars', $stars);
+                }
+            
+                // Get the progress data
+                $progress = $progressQuery->orderBy('created_at', 'ASC')
+                                          ->select('student_progress.*')
+                                          ->get();
+            
+                // Initialize monthlyScores and starCounts arrays
+                $monthlyScores = [];
+                $starCounts = [];
+            
+                foreach ($progress as $course) {
+                    $createdDate = Carbon::parse($course->created_at);
+                    $monthYear = $createdDate->format('Y-m');
+            
+                    // Calculate the score for each test
+                    $testScore = [
+                        'test_name' => $course->test_name,
+                        'test_id' => $course->test_id,
+                        'score' => $course->score,
+                        'star' => $course->stars,  // Include star in the testScore for filtering
+                    ];
+            
+                    // Add the test score to the respective month
+                    if (!isset($monthlyScores[$monthYear])) {
+                        $monthlyScores[$monthYear] = [
+                            'month' => $createdDate->format('M'),
+                            'total_score' => 0,
+                            'star' => $course->stars, 
+                            'tests' => [],
+                        ];
+                    }
+            
+                    $monthlyScores[$monthYear]['tests'][] = $testScore;
+                    $monthlyScores[$monthYear]['total_score'] += $course->score;
+            
+            
+            
+            
+            
+            
+                    // Count stars
+                    $star = $course->stars;
+                    if (isset($starCounts[$star])) {
+                        $starCounts[$star]++;
+                    } else {
+                        $starCounts[$star] = 1;
+                    }
+                }
+                $totalDisplayedStars = array_sum($starCounts);
                 
+                
+                
+            
+                $oneStarDisplayedCount = isset($starCounts[1]) ? $starCounts[1] : 0;
+                $twoStarDisplayedCount = isset($starCounts[2]) ? $starCounts[2] : 0;
+                $threeStarDisplayedCount = isset($starCounts[3]) ? $starCounts[3] : 0;
+                // Filter progress by stars if provided
+                if ($request->filled('stars')) {
+                    $stars = (array) $request->stars;
+                    $data['tprogress'] = array_filter($monthlyScores, function($monthlyScore) use ($stars) {
+                        foreach ($monthlyScore['tests'] as $test) {
+                            if (in_array($test['star'], $stars)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+                } else {
+                    $data['tprogress'] = array_values($monthlyScores);
+                }
+            
+            
+            
+                $oneStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($oneStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+                $twoStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($twoStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+                $threeStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($threeStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+            
+                // Prepare response data
+                $data['progress'] = StudentProgressResource::make($progress);
+            
+                if ($request->filled('stars')) {
+                    $data['counts'] = StudentProgress::where('stars', $request->stars)->count();
+                } else {
+                    $data['counts'] = StudentProgress::where('student_id', $studentId)
+                                                     ->where('program_id', $request->program_id)
+                                                     ->count();
+                }
+                $division = StudentProgress::where('student_id', $studentId)
+                ->count();
+                if($division == 0 )
+                $division = 1;
+                if(!$request->filled('from_date') && !$request->filled('to_date'))
+                $data['reports_percentages'] = [
+                    'three_star' =>( (StudentProgress::where('stars',3)->where('student_id', $studentId)
+                                            ->where('program_id', $request->program_id)->count()/$division)*100) ?? 0,
+                    'two_star' => ((StudentProgress::where('stars',2)->where('student_id', $studentId)
+                                            ->where('program_id', $request->program_id)->count()/$division)*100) ?? 0,
+                     'one_star' => ((StudentProgress::where('stars',1)->where('student_id', $studentId)
+                                            ->where('program_id', $request->program_id)->count()/$division)*100) ?? 0,
+            
+                ];
+                else{
+                    
+                    $threestars = StudentProgress::where('stars',3)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                                            ->where('program_id', $request->program_id)->count();
+                    $twostars=StudentProgress::where('stars',2)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                    ->where('program_id', $request->program_id)->count();
+                    $onestar = StudentProgress::where('stars',1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                                            ->where('program_id', $request->program_id)->count();
+                                            
+                    $division =StudentProgress::where('student_id', $studentId)
+                    ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count(); 
+                    
+                    
+                    if($division == 0){
+                        $division = 1;
+                    }
+                $data['reports_percentages'] = [
+                    'three_star' => (($threestars / $division)*100),
+                    'two_star' => (($twostars / $division)*100),
+                     'one_star' => (($onestar / $division)*100),
+            
+                ];
+            }
+                $test_types = TestTypes::all();
+                $data['test_types'] = TestResource::make($test_types);
+            
+                return $this->returnData('data', $data, 'Student Progress');
             }
             public function masteryReport(Request $request){
                 
