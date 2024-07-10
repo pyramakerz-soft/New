@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\AssignmentController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProfessionalDevelopmentsController;
 use App\Http\Controllers\Api\SettingsController;
@@ -11,6 +10,7 @@ use App\Http\Controllers\Api\UnitsController;
 use App\Http\Controllers\Api\TeachersController;
 use App\Http\Controllers\Api\GameController;
 
+use App\Http\Controllers\Api\AssignmentController;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -64,8 +64,6 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post("studentsInClass", [StudentController::class, "studentsInClass"])->name("studentsInClass");
     Route::post("TeacherAssignmentFilter", [TeachersController::class, "TeacherAssignmentFilter"])->name("TeacherAssignmentFilter");
     Route::post("teacherClasses", [TeachersController::class, "teacherClasses"])->name("teacherClasses");
-    Route::post('/assignments', [AssignmentController::class, 'assign']);
-
     Route::post("game", [GameController::class, "game"])->name("game");
     Route::post("gameType", [GameController::class, "gameType"])->name("gameType");
 
@@ -80,4 +78,5 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('categories/{id}', [CategoryController::class, 'show']);
     Route::get('categories/{id}/all-data', [CategoryController::class, 'getAllCategoryData']);
+    Route::post('/assignments', [AssignmentController::class, 'assign']);
 });

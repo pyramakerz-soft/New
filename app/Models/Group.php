@@ -23,7 +23,6 @@ class Group extends Model
     {
         return $this->belongsTo(User::class, 'teacher_id');
     }
-
     public function student()
     {
         return $this->belongsTo(User::class);
