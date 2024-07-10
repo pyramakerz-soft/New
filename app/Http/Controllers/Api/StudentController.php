@@ -519,17 +519,18 @@ public function StudentProgress(Request $request)
                                          ->where('program_id', $request->program_id)
                                          ->count();
     }
+    $division = StudentProgress::where('student_id', $studentId)
+    ->count();
+    if($division == 0 )
+    $division = 1;
     if(!$request->filled('from_date') && !$request->filled('to_date'))
     $data['reports_percentages'] = [
         'three_star' =>( (StudentProgress::where('stars',3)->where('student_id', $studentId)
-                                ->where('program_id', $request->program_id)->count()/StudentProgress::where('student_id', $studentId)
-                                ->count())*100) ?? 0,
+                                ->where('program_id', $request->program_id)->count()/$division)*100) ?? 0,
         'two_star' => ((StudentProgress::where('stars',2)->where('student_id', $studentId)
-                                ->where('program_id', $request->program_id)->count()/StudentProgress::where('student_id', $studentId)
-                                ->count())*100) ?? 0,
+                                ->where('program_id', $request->program_id)->count()/$division)*100) ?? 0,
          'one_star' => ((StudentProgress::where('stars',1)->where('student_id', $studentId)
-                                ->where('program_id', $request->program_id)->count()/StudentProgress::where('student_id', $studentId)
-                                ->count())*100) ?? 0,
+                                ->where('program_id', $request->program_id)->count()/$division)*100) ?? 0,
 
     ];
     else{
