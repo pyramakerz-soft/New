@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Ebook;
 use App\Models\LessonPlan;
-use App\Models\PPT;
+
+use App\Models\Ppt;
+
 use App\Models\Video;
 use App\Traits\HelpersTrait;
 use Illuminate\Http\Request;

@@ -5,6 +5,8 @@
 /public/storage
 /storage/*.key
 /vendor
+/FullBKUP
+/gitpull
 .env
 .env.backup
 .env.production
