@@ -394,4 +394,17 @@ $data['progress'] = $progress->select('student_progress.*')->get();
             return $this->returnData('data',$data,"Teacher Assignments ");
                 
             }
+
+            public function completionReport(Request $request){
+                
+            }
+            public function masteryReport(Request $request){
+                
+            }
+            public function numOfTrialsReport(Request $request){
+                
+            }
+            public function skillReport(Request $request){
+                
+            }
 }
