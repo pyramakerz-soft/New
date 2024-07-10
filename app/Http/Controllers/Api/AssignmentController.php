@@ -19,6 +19,7 @@ class AssignmentController extends Controller
     public function assign(Request $request)
     {
 
+
         $validatedData = $request->validate([
             'student_id' => 'array',
             'student_id.*' => 'integer|exists:users,id',
