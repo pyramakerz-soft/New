@@ -54,12 +54,8 @@ class PPTResource extends Resource
                         'ppt' => 'PPT',
                     ])
                     ->searchable(),
-                Select::make('is_downloadable')->label('Downloadable')
-                    ->options([
-                        'true' => 'True',
-                        'false' => 'False',
-                    ])
-                    ->searchable(),
+                Checkbox::make('is_downloadable')
+                    ->label('Downloadable'),
             ]);
     }
 
