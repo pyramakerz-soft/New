@@ -50,6 +50,7 @@ class StudentProgressResource extends JsonResource
         $check = 1;
         foreach ($this->resource as $course) {
             // dd($course);
+            $student_name = User::find($course->student_id)->name ?? '-';
             $createdDate = Carbon::parse($course->created_at);
             $created_at = date('m',strtotime($course->created_at));
             $testName = $course->tests->name;
@@ -75,6 +76,7 @@ class StudentProgressResource extends JsonResource
     $gameName = $test->game->inst ?? '-';
 
         array_push($arr, [
+            'student_name' => $student_name ?? '-',
             'test_name' => $testName,
             'test_id' => $testId,
             // 'teacher_name' => $teacher,

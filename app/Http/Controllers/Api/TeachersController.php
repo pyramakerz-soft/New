@@ -1409,6 +1409,289 @@ public function classMasteryReport(Request $request) {
 
 
 
+   public function classNumOfTrialsReport(Request $request)
+{
+    // Get the student IDs for the given group ID
+    $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
+
+    // Initialize query builder with student IDs and program ID
+    $progressQuery = StudentProgress::whereIn('student_id', $students)
+                            ->where('program_id', $request->program_id);
+
+    if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+        $from_date = date('Y-m-d', strtotime($request->from_date));
+        $to_date = date('Y-m-d', strtotime($request->to_date));
+        $progressQuery->whereBetween('created_at', [$from_date, $to_date]);
+    }
+
+    // Filter by month of created_at date if provided
+    if ($request->filled('month')) {
+        $month = $request->month;
+        $progressQuery->whereMonth('student_progress.created_at', Carbon::parse($month)->month);
+    }
+
+    // Filter by test_types if provided
+    if ($request->filled('type')) {
+        $type = $request->type;
+        $progressQuery->join('tests', 'student_progress.test_id', '=', 'tests.id')
+                      ->where('tests.type', $type);
+    }
+
+    // Filter by stars if provided
+    if ($request->filled('stars')) {
+        $stars = (array) $request->stars;
+        $progressQuery->whereIn('stars', $stars);
+    }
+
+    // Get the progress data
+    $progress = $progressQuery->orderBy('created_at', 'ASC')
+                              ->select('student_progress.*')
+                              ->get();
+
+    // Initialize monthlyScores and starCounts arrays
+    $monthlyScores = [];
+    $starCounts = [];
+
+    foreach ($progress as $course) {
+        $createdDate = Carbon::parse($course->created_at);
+        $monthYear = $createdDate->format('Y-m');
+
+        // Calculate the score for each test
+        $testScore = [
+            'test_name' => $course->test_name,
+            'test_id' => $course->test_id,
+            'score' => $course->score,
+            'star' => $course->stars,
+        ];
+
+        // Add the test score to the respective month
+        if (!isset($monthlyScores[$monthYear])) {
+            $monthlyScores[$monthYear] = [
+                'month' => $createdDate->format('M'),
+                'total_score' => 0,
+                'star' => $course->stars, 
+                'tests' => [],
+            ];
+        }
+
+        $monthlyScores[$monthYear]['tests'][] = $testScore;
+        $monthlyScores[$monthYear]['total_score'] += $course->score;
+
+        // Count stars
+        $star = $course->stars;
+        if (isset($starCounts[$star])) {
+            $starCounts[$star]++;
+        } else {
+            $starCounts[$star] = 1;
+        }
+    }
+
+    $totalDisplayedStars = array_sum($starCounts);
+    $oneStarDisplayedCount = isset($starCounts[1]) ? $starCounts[1] : 0;
+    $twoStarDisplayedCount = isset($starCounts[2]) ? $starCounts[2] : 0;
+    $threeStarDisplayedCount = isset($starCounts[3]) ? $starCounts[3] : 0;
+
+    // Filter progress by stars if provided
+    if ($request->filled('stars')) {
+        $stars = (array) $request->stars;
+        $data['tprogress'] = array_filter($monthlyScores, function($monthlyScore) use ($stars) {
+            foreach ($monthlyScore['tests'] as $test) {
+                if (in_array($test['star'], $stars)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    } else {
+        $data['tprogress'] = array_values($monthlyScores);
+    }
+
+    $oneStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($oneStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+    $twoStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($twoStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+    $threeStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($threeStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+
+    // Prepare response data
+    $data['progress'] = StudentProgressResource::make($progress);
+
+    if ($request->filled('stars')) {
+        $data['counts'] = StudentProgress::whereIn('student_id', $students)
+                            ->where('program_id', $request->program_id)
+                            ->whereIn('stars', $request->stars)
+                            ->count();
+    } else {
+        $data['counts'] = StudentProgress::whereIn('student_id', $students)
+                            ->where('program_id', $request->program_id)
+                            ->count();
+    }
+
+    if (!$request->filled(['from_date', 'to_date'])) {
+        $totalAttempts = StudentProgress::whereIn('student_id', $students)
+                                ->where('program_id', $request->program_id)
+                                ->count();
+        $data['reports_percentages'] = [
+            'first_trial' => (StudentProgress::whereIn('student_id', $students)
+                                ->where('stars', 3)
+                                ->where('program_id', $request->program_id)
+                                ->count() / max($totalAttempts, 1)) * 100,
+            'second_trial' => (StudentProgress::whereIn('student_id', $students)
+                                ->where('stars', 2)
+                                ->where('program_id', $request->program_id)
+                                ->count() / max($totalAttempts, 1)) * 100,
+            'third_trial' => (StudentProgress::whereIn('student_id', $students)
+                                ->where('stars', 1)
+                                ->where('program_id', $request->program_id)
+                                ->count() / max($totalAttempts, 1)) * 100,
+        ];
+    } else {
+        $threestars = StudentProgress::whereIn('student_id', $students)
+                        ->where('stars', 3)
+                        ->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                        ->where('program_id', $request->program_id)
+                        ->count();
+        $twostars = StudentProgress::whereIn('student_id', $students)
+                        ->where('stars', 2)
+                        ->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                        ->where('program_id', $request->program_id)
+                        ->count();
+        $onestar = StudentProgress::whereIn('student_id', $students)
+                        ->where('stars', 1)
+                        ->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                        ->where('program_id', $request->program_id)
+                        ->count();
+
+        $totalAttempts = StudentProgress::whereIn('student_id', $students)
+                        ->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                        ->count();
+
+        $data['reports_percentages'] = [
+            'first_trial' => ($threestars / max($totalAttempts, 1)) * 100,
+            'second_trial' => ($twostars / max($totalAttempts, 1)) * 100,
+            'third_trial' => ($onestar / max($totalAttempts, 1)) * 100,
+        ];
+    }
+
+    $test_types = TestTypes::all();
+    $data['test_types'] = TestResource::make($test_types);
+
+    return $this->returnData('data', $data, 'Group Progress');
+}
+
+
+
+
+public function classSkillReport(Request $request)
+{
+    $groupId = $request->group_id;
+    $programId = $request->program_id;
+    $fromDate = $request->from_date;
+    $toDate = $request->to_date;
+
+    // Get the student IDs for the given group ID
+    $students = GroupStudent::where('group_id', $groupId)->pluck('student_id');
+
+    // Initialize an array to store the skills data for each student
+    $skillsData = [];
+
+    // Loop through each student to retrieve their progress
+    foreach ($students as $studentId) {
+        $studentProgressQuery = StudentProgress::where('student_id', $studentId)
+            ->where('program_id', $programId);
+
+        if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            $fromDate = date('Y-m-d', strtotime($request->from_date));
+            $toDate = date('Y-m-d', strtotime($request->to_date));
+            $studentProgressQuery->whereBetween('created_at', [$fromDate, $toDate]);
+        }
+
+        $studentProgress = $studentProgressQuery->get();
+
+        if ($studentProgress->isEmpty()) {
+            continue;
+        }
+
+        foreach ($studentProgress as $progress) {
+            $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
+
+            if ($test && $test->game) {
+                $game = $test->game;
+
+                if ($game->gameTypes && $game->gameTypes->skills) {
+                    if (!$game->gameTypes->skills->isEmpty()) {
+                        foreach ($game->gameTypes->skills as $gameSkill) {
+                            if (!$gameSkill->skill) continue;
+
+                            $skill = $gameSkill->skill;
+                            $skillName = $skill->skill; // Assuming the column name is 'skill'
+                            $date = $progress->created_at->format('Y-m-d');
+
+                            $currentLevel = 'Introduced';
+                            if ($progress->score >= 80) {
+                                $currentLevel = 'Mastered';
+                            } elseif ($progress->score >= 60) {
+                                $currentLevel = 'Practiced';
+                            }
+
+                            // Use student ID and skill name as the key to aggregate scores
+                            if (!isset($skillsData[$studentId])) {
+                                $student = Student::find($studentId);
+                                $skillsData[$studentId] = [
+                                    'student_name' => $student->name,
+                                    'skills' => []
+                                ];
+                            }
+
+                            if (!isset($skillsData[$studentId]['skills'][$skillName])) {
+                                $skillsData[$studentId]['skills'][$skillName] = [
+                                    'skill_name' => $skillName,
+                                    'total_score' => 0,
+                                    'current_level' => $currentLevel,
+                                    'date' => $date,
+                                ];
+                            }
+
+                            // Sum the scores for each skill and update current level if needed
+                            $skillsData[$studentId]['skills'][$skillName]['total_score'] += $progress->score;
+                            if ($currentLevel === 'Mastered') {
+                                $skillsData[$studentId]['skills'][$skillName]['current_level'] = 'Mastered';
+                            } elseif ($currentLevel === 'Practiced' && $skillsData[$studentId]['skills'][$skillName]['current_level'] !== 'Mastered') {
+                                $skillsData[$studentId]['skills'][$skillName]['current_level'] = 'Practiced';
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (empty($skillsData)) {
+        return $this->returnData('data', [], 'No skills data found for the given group.');
+    }
+
+    // Convert the associative array to an indexed array for final data
+    $finalData = [];
+    foreach ($skillsData as $studentId => $data) {
+        foreach ($data['skills'] as $skillData) {
+            $finalData[] = [
+                'student_name' => $data['student_name'],
+                'skill_name' => $skillData['skill_name'],
+                'total_score' => $skillData['total_score'],
+                'current_level' => $skillData['current_level'],
+                'date' => $skillData['date'],
+            ];
+        }
+    }
+
+    // Generate the Excel file
+    $fileName = 'Group_Skill_Report_' . now()->format('Ymd_His') . '.xlsx';
+    Excel::store(new SkillsExport($finalData), $fileName, 'public');
+
+    // Return the downloadable link
+    $filePath = 'https://ambernoak.co.uk/Fillament/public'.Storage::url($fileName);
+
+    return $this->returnData('data', ['download_link' => $filePath], 'Group Skill Report');
+}
+
+
 
 
 
