@@ -53,9 +53,7 @@ class LessonPlanResource extends Resource
                     ->required(fn(string $context): bool => $context == 'create')
                     ->dehydrated(true)
                     ->preserveFilenames()
-
                     ->acceptedFileTypes(['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
-                    // ->maxSize(5000)
 
                 ,
 

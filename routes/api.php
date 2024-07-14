@@ -49,6 +49,7 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     // Route::get("units", [UnitsController::class, "units"])->name("units");
     Route::get("student-profile/{email}", [StudentController::class, "index"])->name("student-profile");
     Route::get("student_programs", [StudentController::class, "studentPrograms"])->name("student_programs");
+    Route::get("student_programs_assign", [StudentController::class, "studentProgramsAssign"])->name("student_programs_assign");
     Route::post("student_programs_test", [StudentController::class, "studentPrograms_test"])->name("student_programs_test");
 
     Route::get("lessons/{id}", [LessonController::class, "index"])->name("lessons");
