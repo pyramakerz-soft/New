@@ -50,9 +50,10 @@ class StudentAssignmentResource extends JsonResource
             
             // foreach ($data as $course) {
                 
-                // dd($course);
+                
                 // Access the test and due_date from the $course object
                 if (isset($course->tests)) {
+                    $studentName = User::find($course->student_id)->name ?? '-';
                     $testName = $course->tests->name;
                     $testId = $course->test_id;
                     $dueDate = $course->due_date;
@@ -131,6 +132,7 @@ class StudentAssignmentResource extends JsonResource
                     $bgColor = '#FF93301A';
                 }
                     array_push($arr, [
+                        'student_name' => $studentName ?? '-',
                         'test_name' => $testName,
                         'test_id' => $testId,
                         'teacher_name' => $teacher,

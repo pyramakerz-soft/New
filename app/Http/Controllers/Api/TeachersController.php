@@ -1008,4 +1008,148 @@ if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL &&
 
 
 
+
+
+
+
+
+
+
+public function classCompletionReport(Request $request)
+{
+    $groupId = $request->group_id;
+
+    // Retrieve all students in the group
+    $students = GroupStudent::where('group_id', $groupId)->pluck('student_id');
+    
+    if ($students->isEmpty()) {
+        return $this->returnData('data', [], 'No students found for the given group.');
+    }
+
+    // Initialize the query builder for student progress
+    $progressQuery = StudentTest::with('tests')
+        ->whereIn('student_id', $students);
+
+    if ($request->filled('future') && $request->future != NULL) {
+        if ($request->future == 1) {
+            // No additional conditions needed
+        } elseif ($request->future == 0) {
+            $progressQuery->where('start_date', '<=', date('Y-m-d', strtotime(now())));
+        }
+    } else {
+        $progressQuery->where('start_date', '<=', date('Y-m-d', strtotime(now())));
+    }
+
+    // Filter by from and to date if provided
+    if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+        $fromDate = Carbon::createFromFormat('d/m/Y', $request->from_date)->format('Y-m-d');
+        $toDate = Carbon::createFromFormat('d/m/Y', $request->to_date)->format('Y-m-d');
+        $progressQuery->whereBetween('due_date', [$fromDate, $toDate]);
+    }
+
+    // Filter by program ID if provided
+    if ($request->filled('program_id') && $request->program_id != NULL) {
+        $progressQuery->where('program_id', $request->program_id);
+    }
+
+    // Execute the query
+    $allTests = $progressQuery->orderBy('due_date', 'DESC')->get();
+    $totalAllTests = $allTests->count();
+    $finishedCount = $allTests->where('status', 1)->count();
+    $overdueCount = $allTests->where('due_date', '<', \Carbon\Carbon::now()->format('Y-m-d'))
+        ->where('status', '!=', 1)
+        ->count();
+    $pendingCount = $totalAllTests - $finishedCount - $overdueCount;
+
+    // Calculate percentages as integers
+    $finishedPercentage = $totalAllTests > 0 ? round(($finishedCount / $totalAllTests) * 100, 2) : 0;
+    $overduePercentage = $totalAllTests > 0 ? round(($overdueCount / $totalAllTests) * 100, 2) : 0;
+    $pendingPercentage = $totalAllTests > 0 ? round(($pendingCount / $totalAllTests) * 100, 2) : 0;
+
+    // Filter by status if provided
+    if ($request->filled('status') && $request->status != NULL) {
+        $now = \Carbon\Carbon::now();
+        $status = $request->status;
+        switch ($status) {
+            case 'Completed':
+                $progressQuery->where('status', '1');
+                break;
+            case 'Overdue':
+                $progressQuery->where('due_date', '<', $now->format('Y-m-d'))->where('status', '!=', 1);
+                break;
+            case 'Pending':
+                $progressQuery->where('status', '0')->where('due_date', '>=', $now->format('Y-m-d'));
+                break;
+            default:
+                // Invalid status provided
+                break;
+        }
+    }
+
+    // Filter by assignment types if provided
+    if ($request->filled('types') && $request->types != NULL) {
+        $assignmentTypes = $request->types;
+        $progressQuery->whereHas('tests', function ($q) use ($assignmentTypes) {
+            $q->join('test_types', 'tests.type', '=', 'test_types.id')
+                ->whereIn('test_types.id', $assignmentTypes);
+        });
+    }
+
+    // Execute the query
+    $tests = $progressQuery->orderBy('due_date', 'DESC')->get();
+
+    // Calculate status counts
+    $totalTests = $tests->count();
+
+    // Prepare response data
+    $test_types = TestTypes::all();
+
+    $data['counts'] = [
+        'completed' => $finishedCount,
+        'overdue' => $overdueCount,
+        'pending' => $pendingCount,
+    ];
+    $data['assignments_percentages'] = [
+        'completed' => ceil($finishedPercentage),
+        'overdue' => floor($overduePercentage),
+        'pending' => ceil($pendingPercentage),
+    ];
+    $data['tests'] = StudentAssignmentResource::make($tests);
+    $data['test_types'] = TestResource::make($test_types);
+
+    $user_id = auth()->user()->id;
+    $courses = DB::table('user_courses')
+        ->join('programs', 'user_courses.program_id', '=', 'programs.id')
+        ->join('courses', 'programs.course_id', '=', 'courses.id')
+        ->where('user_courses.user_id', $user_id)
+        ->select('programs.id as program_id', 'courses.name as course_name')
+        ->get();
+
+    // Add the "all programs" entry
+    $allProgramsEntry = (object)[
+        'program_id' => null,
+        'course_name' => 'All Programs'
+    ];
+    $courses->prepend($allProgramsEntry);
+
+    $data['courses'] = $courses;
+
+    // Return response
+    return $this->returnData('data', $data, "All groups for the class");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
