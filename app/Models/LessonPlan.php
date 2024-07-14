@@ -21,8 +21,8 @@ class LessonPlan extends Model
     {
         return !is_null($this->file_path);
     }
-    public function getFileAttribute($val)
+    public function getFilePathAttribute($val)
     {
-        return ($val !== null) ? asset('storage/' . $val) : "";
+        return ($val !== null) ? asset('storage/' . $val) : null;
     }
 }

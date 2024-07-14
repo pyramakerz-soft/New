@@ -53,10 +53,9 @@ class LessonPlanResource extends Resource
                     ->required(fn(string $context): bool => $context == 'create')
                     ->dehydrated(true)
                     ->preserveFilenames()
-                    ->directory('storage')
-                ->disk('public')
+
                     ->acceptedFileTypes(['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
-                    ->maxSize(5000)
+                    // ->maxSize(5000)
 
                 ,
 
@@ -70,8 +69,8 @@ class LessonPlanResource extends Resource
                 ->searchable(),
                 Select::make('is_downloadable')->label('Downloadable')
                 ->options([
-                    'true' => 'True',
-                    'false' => 'False',
+                    '1' => 'True',
+                    '0' => 'False',
                 ])
                 ->searchable(),
             ]);
