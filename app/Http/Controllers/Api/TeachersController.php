@@ -1046,11 +1046,57 @@ class TeachersController extends Controller
             $progressQuery->where('start_date', '<=', date('Y-m-d', strtotime(now())));
         }
 
-        // Filter by from and to date if provided
-        if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-            $fromDate = Carbon::createFromFormat('d/m/Y', $request->from_date)->format('Y-m-d');
-            $toDate = Carbon::createFromFormat('d/m/Y', $request->to_date)->format('Y-m-d');
-            $progressQuery->whereBetween('due_date', [$fromDate, $toDate]);
+// <<<<<<< HEAD
+//         // Filter by from and to date if provided
+//         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+//             $fromDate = Carbon::createFromFormat('d/m/Y', $request->from_date)->format('Y-m-d');
+//             $toDate = Carbon::createFromFormat('d/m/Y', $request->to_date)->format('Y-m-d');
+//             $progressQuery->whereBetween('due_date', [$fromDate, $toDate]);
+// =======
+    // Filter by from and to date if provided
+    if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+        $progressQuery->whereBetween('due_date', [$fromDate, $toDate]);
+    }
+
+    // Filter by program ID if provided
+    if ($request->filled('program_id') && $request->program_id != NULL) {
+        $progressQuery->where('program_id', $request->program_id);
+    }
+
+    // Execute the query
+    $allTests = $progressQuery->orderBy('due_date', 'DESC')->get();
+    $totalAllTests = $allTests->count();
+    $finishedCount = $allTests->where('status', 1)->count();
+    $overdueCount = $allTests->where('due_date', '<', \Carbon\Carbon::now()->format('Y-m-d'))
+        ->where('status', '!=', 1)
+        ->count();
+    $pendingCount = $totalAllTests - $finishedCount - $overdueCount;
+
+    // Calculate percentages as integers
+    $finishedPercentage = $totalAllTests > 0 ? round(($finishedCount / $totalAllTests) * 100, 2) : 0;
+    $overduePercentage = $totalAllTests > 0 ? round(($overdueCount / $totalAllTests) * 100, 2) : 0;
+    $pendingPercentage = $totalAllTests > 0 ? round(($pendingCount / $totalAllTests) * 100, 2) : 0;
+
+    // Filter by status if provided
+    if ($request->filled('status') && $request->status != NULL) {
+        $now = \Carbon\Carbon::now();
+        $status = $request->status;
+        switch ($status) {
+            case 'Completed':
+                $progressQuery->where('status', '1');
+                break;
+            case 'Overdue':
+                $progressQuery->where('due_date', '<', $now->format('Y-m-d'))->where('status', '!=', 1);
+                break;
+            case 'Pending':
+                $progressQuery->where('status', '0')->where('due_date', '>=', $now->format('Y-m-d'));
+                break;
+            default:
+                // Invalid status provided
+                break;
+>>>>>>> 0c464b6 (Class Mastery Report)
         }
 
         // Filter by program ID if provided
@@ -1145,6 +1191,217 @@ class TeachersController extends Controller
     }
 
 
+
+
+
+
+
+public function classMasteryReport(Request $request) {
+    // Retrieve all students in the specified group
+    $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
+
+    if ($students->isEmpty()) {
+        return $this->returnData('data', [], 'No students found in the specified group.');
+    }
+
+    // Initialize query builder for student progress
+    $query = StudentProgress::whereIn('student_id', $students)
+                            ->where('program_id', $request->program_id);
+
+    // Apply filters if provided
+    if ($request->has('unit_id')) {
+        $query->where('unit_id', $request->unit_id);
+    }
+    if ($request->has('lesson_id')) {
+        $query->where('lesson_id', $request->lesson_id);
+    }
+    if ($request->has('game_id')) {
+        $query->whereHas('test', function ($q) use ($request) {
+            $q->where('game_id', $request->game_id);
+        });
+    }
+    if ($request->has('skill_id')) {
+        $query->whereHas('test.game.gameTypes.skills', function ($q) use ($request) {
+            $q->where('skill_id', $request->skill_id);
+        });
+    }
+
+    if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+        $toDate = Carbon::parse($request->to_date)->endOfDay();
+        $query->whereBetween('created_at', [$fromDate, $toDate]);
+    }
+
+    $student_progress = $query->get();
+
+    // Initialize arrays to hold data for grouping
+    $unitsMastery = [];
+    $lessonsMastery = [];
+    $gamesMastery = [];
+    $skillsMastery = [];
+
+    // Process each progress record
+    foreach($student_progress as $progress) {
+        // Retrieve the test and its related game, game type, and skills
+        $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
+        // Check if the test and its relationships are properly loaded
+        if (!$test || !$test->game || !$test->game->gameTypes) {
+            continue; // Skip to the next progress record if any of these are null
+        }
+
+        // Get the game type (since each game has one game type)
+        $gameType = $test->game->gameTypes;
+
+        // Group by unit
+        if (!isset($unitsMastery[$progress->unit_id])) {
+            $unitsMastery[$progress->unit_id] = [
+                'unit_id' => $progress->unit_id,
+                'introduced' => 0,
+                'practiced' => 0,
+                'mastered' => 0,
+                'total_attempts' => 0,
+            ];
+        }
+
+        // Group by lesson
+        if (!isset($lessonsMastery[$progress->lesson_id])) {
+            $lessonsMastery[$progress->lesson_id] = [
+                'lesson_id' => $progress->lesson_id,
+                'introduced' => 0,
+                'practiced' => 0,
+                'mastered' => 0,
+                'total_attempts' => 0,
+            ];
+        }
+
+        // Group by game
+        if (!isset($gamesMastery[$test->game_id])) {
+            $gamesMastery[$test->game_id] = [
+                'game_id' => $test->game_id,
+                'introduced' => 0,
+                'practiced' => 0,
+                'mastered' => 0,
+                'total_attempts' => 0,
+            ];
+        }
+
+        // Check if the game type has related skills
+        if ($gameType && $gameType->skills) {
+            foreach($gameType->skills as $gameSkill) {
+                $skill = $gameSkill->skill;
+
+                // Group by skill
+                if (!isset($skillsMastery[$skill->id])) {
+                    $skillsMastery[$skill->id] = [
+                        'skill_id' => $skill->id,
+                        'name' => $skill->skill,
+                        'introduced' => 0,
+                        'practiced' => 0,
+                        'mastered' => 0,
+                        'total_attempts' => 0,
+                    ];
+                }
+
+                // Update the skill data
+                $skillsMastery[$skill->id]['total_attempts']++;
+                if ($progress->is_done) {
+                    if ($progress->score >= 80) {
+                        $skillsMastery[$skill->id]['mastered']++;
+                        $unitsMastery[$progress->unit_id]['mastered']++;
+                        $lessonsMastery[$progress->lesson_id]['mastered']++;
+                        $gamesMastery[$test->game_id]['mastered']++;
+                    } elseif ($progress->score >= 30) {
+                        $skillsMastery[$skill->id]['practiced']++;
+                        $unitsMastery[$progress->unit_id]['practiced']++;
+                        $lessonsMastery[$progress->lesson_id]['practiced']++;
+                        $gamesMastery[$test->game_id]['practiced']++;
+                    } else {
+                        $skillsMastery[$skill->id]['introduced']++;
+                        $unitsMastery[$progress->unit_id]['introduced']++;
+                        $lessonsMastery[$progress->lesson_id]['introduced']++;
+                        $gamesMastery[$test->game_id]['introduced']++;
+                    }
+                }
+            }
+        }
+
+        // Update totals for units, lessons, and games
+        $unitsMastery[$progress->unit_id]['total_attempts']++;
+        $lessonsMastery[$progress->lesson_id]['total_attempts']++;
+        $gamesMastery[$test->game_id]['total_attempts']++;
+    }
+
+    // Determine the current level for each skill
+    foreach($skillsMastery as &$skillData) {
+        $introduced = $skillData['introduced'];
+        $practiced = $skillData['practiced'];
+        $mastered = $skillData['mastered'];
+        $total = $skillData['total_attempts'];
+
+        if ($mastered > $practiced && $mastered > $introduced) {
+            $skillData['current_level'] = 'Mastered';
+        } elseif ($practiced > $introduced) {
+            $skillData['current_level'] = 'Practiced';
+        } else {
+            $skillData['current_level'] = 'Introduced';
+        }
+
+        // Calculate mastery percentage
+        $skillData['mastery_percentage'] = $total > 0 ? min(($mastered / $total) * 100, 100) : 0;
+    }
+
+    // Determine the current level for each unit, lesson, and game
+    $determineLevel = function(&$data) {
+        foreach($data as &$item) {
+            $introduced = $item['introduced'];
+            $practiced = $item['practiced'];
+            $mastered = $item['mastered'];
+            $total = $item['total_attempts'];
+
+            if ($mastered > $practiced && $mastered > $introduced) {
+                $item['current_level'] = 'Mastered';
+            } elseif ($practiced > $introduced) {
+                $item['current_level'] = 'Practiced';
+            } else {
+                $item['current_level'] = 'Introduced';
+            }
+
+            // Calculate mastery percentage
+            $item['mastery_percentage'] = $total > 0 ? min(($mastered / $total) * 100, 100) : 0;
+        }
+    };
+
+    $determineLevel($unitsMastery);
+    $determineLevel($lessonsMastery);
+    $determineLevel($gamesMastery);
+
+    // Filter the data based on the requested filter type
+    $responseData = [];
+    if ($request->has('filter')) {
+        switch ($request->filter) {
+            case 'unit':
+                $responseData = array_values($unitsMastery);
+                break;
+            case 'lesson':
+                $responseData = array_values($lessonsMastery);
+                break;
+            case 'game':
+                $responseData = array_values($gamesMastery);
+                break;
+            case 'skill':
+                $responseData = array_values($skillsMastery);
+                break;
+            default:
+                $responseData = array_values($skillsMastery); // Default to skills if no valid filter provided
+                break;
+        }
+    } else {
+        $responseData = array_values($skillsMastery); // Default to skills if no filter provided
+    }
+
+    // Return the mastery report data
+    return $this->returnData('data', $responseData, 'Group Progress');
+}
 
 
 
