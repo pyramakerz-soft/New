@@ -162,46 +162,48 @@ class StudentController extends Controller
         return $this->returnData('data', $data, "All groups for the student");
 
     }
-    
+
     public function studentProgramsAssign()
-{
-    // Fetch the user and related programs with courses and student tests
-    $user = User::with([
-        'userCourses.program',
-        'userCourses.program.course',
-        'userCourses.program.student_tests' => function($query) {
-            $query->where('student_id', auth()->user()->id)
-                  ->where('status', 0)
-                  ->where('start_date', '<=', now()->format('Y-m-d'))
-                  ->where('due_date', '>=', now()->format('Y-m-d'));
+    {
+        // Fetch the user and related programs with courses and student tests
+        $user = User::with([
+            'userCourses.program',
+            'userCourses.program.course',
+            'userCourses.program.student_tests' => function ($query) {
+                $query->where('student_id', auth()->user()->id)
+                    ->where('status', 0)
+                    ->where('start_date', '<=', now()->format('Y-m-d'))
+                    ->where('due_date', '>=', now()->format('Y-m-d'));
+            }
+        ])->where('id', auth()->user()->id)->first();
+
+        if (!$user) {
+            return $this->returnData('data', [], 'User not found');
         }
-    ])->where('id', auth()->user()->id)->first();
 
-    if (!$user) {
-        return $this->returnData('data', [], 'User not found');
-    }
 
-    // Filter programs to ensure they have student tests and handle unique lesson_id
-    $filteredPrograms = $user->userCourses->filter(function($course) {
-        $course->program->student_tests = $course->program->student_tests
+        // Filter programs to ensure they have student tests and handle unique lesson_id
+        $filteredPrograms = $user->userCourses->filter(function ($course) {
+            $course->program->student_tests = $course->program->student_tests
+                ->where('due_date', '>=', now()->format('Y-m-d'))
+                ->where('start_date', '<=', now()->format('Y-m-d'))
+                ->unique('lesson_id');
+            return $course->program->student_tests->isNotEmpty();
+        });
+
+        $data['programs'] = $filteredPrograms->values();
+        
+
+        // Fetch test types and count of pending student tests
+        $data['test_types'] = TestTypes::all();
+        $data['count'] = StudentTest::where('student_id', auth()->user()->id)
+            ->where('status', '=', 0)
             ->where('due_date', '>=', now()->format('Y-m-d'))
             ->where('start_date', '<=', now()->format('Y-m-d'))
-            ->unique('lesson_id');
-        return $course->program->student_tests->isNotEmpty();
-    });
+            ->count();
 
-    $data['programs'] = $filteredPrograms->values();
-
-    // Fetch test types and count of pending student tests
-    $data['test_types'] = TestTypes::all();
-    $data['count'] = StudentTest::where('student_id', auth()->user()->id)
-        ->where('status', '=', 0)
-        ->where('due_date', '>=', now()->format('Y-m-d'))
-        ->where('start_date', '<=', now()->format('Y-m-d'))
-        ->count();
-
-    return $this->returnData('data', $data, "All groups for the student");
-}
+        return $this->returnData('data', $data, "All groups for the student");
+    }
 
     /**
      * @OA\Post(
@@ -222,13 +224,15 @@ class StudentController extends Controller
      *     )
      * )
      */
-    public function studentsInClass(Request $request){
-    $students_in_group = GroupStudent::where('group_id',$request->group_id)->get();
-    $data['group'] = Group::find($request->group_id)->name;
-    $arr =array();
-    foreach($students_in_group as $student){
-        array_push($arr,
-            User::where('id',$student->student_id)->first(),
+    public function studentsInClass(Request $request)
+    {
+        $students_in_group = GroupStudent::where('group_id', $request->group_id)->get();
+        $data['group'] = Group::find($request->group_id)->name;
+        $arr = array();
+        foreach ($students_in_group as $student) {
+            array_push(
+                $arr,
+                User::where('id', $student->student_id)->first(),
             );
         }
         $data['students'] = $arr;
@@ -601,27 +605,27 @@ class StudentController extends Controller
                 'one_star' => ((StudentProgress::where('stars', 1)->where('student_id', $studentId)
                     ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
 
-    ];
-    else{
-        
-        $threestars = StudentProgress::where('stars',3)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                                ->where('program_id', $request->program_id)->count();
-        $twostars=StudentProgress::where('stars',2)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
-        ->where('program_id', $request->program_id)->count();
-        $onestar = StudentProgress::where('stars',1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                                ->where('program_id', $request->program_id)->count();
-                                
-        $division =StudentProgress::where('student_id', $studentId)
-        ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count(); 
-        
-        
-        if($division == 0){
-            $division = 1;
-        }
-    $data['reports_percentages'] = [
-        'three_star' => (($threestars / $division)*100),
-        'two_star' => (($twostars / $division)*100),
-         'one_star' => (($onestar / $division)*100),
+            ];
+        else {
+
+            $threestars = StudentProgress::where('stars', 3)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                ->where('program_id', $request->program_id)->count();
+            $twostars = StudentProgress::where('stars', 2)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                ->where('program_id', $request->program_id)->count();
+            $onestar = StudentProgress::where('stars', 1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                ->where('program_id', $request->program_id)->count();
+
+            $division = StudentProgress::where('student_id', $studentId)
+                ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
+
+
+            if ($division == 0) {
+                $division = 1;
+            }
+            $data['reports_percentages'] = [
+                'three_star' => (($threestars / $division) * 100),
+                'two_star' => (($twostars / $division) * 100),
+                'one_star' => (($onestar / $division) * 100),
 
             ];
         }
