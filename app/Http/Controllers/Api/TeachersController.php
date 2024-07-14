@@ -746,8 +746,8 @@ if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL &&
                                 ->where('program_id', $request->program_id);
 
 if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-        $from_date = date('Y-m-d',strtotime($request->from_date));
-        $to_date = date('Y-m-d',strtotime($request->to_date));
+        $from_date = date('d-m-Y',strtotime($request->from_date));
+        $to_date = date('d-m-Y',strtotime($request->to_date));
         $progressQuery->whereBetween('created_at', [$from_date, $to_date]);
     }
     // Filter by month of created_at date if provided
@@ -912,15 +912,19 @@ public function skillReport(Request $request)
     $toDate = $request->to_date;
 
     // Convert dates to Carbon instances for better manipulation
-    $fromDate = Carbon::parse($fromDate)->startOfDay();
-    $toDate = Carbon::parse($toDate)->endOfDay();
+    // $fromDate = Carbon::parse($fromDate)->startOfDay();
+    // $toDate = Carbon::parse($toDate)->endOfDay();
 
     // Retrieve student progress within the date range
     $studentProgress = StudentProgress::where('student_id', $studentId)
         ->where('program_id', $programId)
         ->whereBetween('created_at', [$fromDate, $toDate])
         ->get();
-
+if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+        $studentProgress->whereBetween('created_at', [$fromDate, $toDate]);
+    }
     if ($studentProgress->isEmpty()) {
         return $this->returnData('data', [], 'No student progress found for the given date range.');
     }
