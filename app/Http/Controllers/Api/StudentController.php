@@ -100,10 +100,11 @@ class StudentController extends Controller
     public function studentAssignmentsGames(Request $request)
     {
         // $studentTest = StudentTest::where('student_id', auth()->user()->id)->select('test_id')->get();
-        $studentsDidAss = StudentTest::where('student_id', auth()->user()->id)->where('student_tests.status', 0)->where('student_tests.due_date', '>=', date('Y-m-d', strtotime(now())))->where('student_tests.start_date', '<=', date('Y-m-d', strtotime(now())))->get();
+        $studentsDidAss = StudentTest::where('program_id', $request->program_id)->where('student_id', auth()->user()->id)->where('student_tests.status', 0)->where('student_tests.due_date', '>=', date('Y-m-d', strtotime(now())))->where('student_tests.start_date', '<=', date('Y-m-d', strtotime(now())))->get();
+        // dd($studentsDidAss);
 
         $testQuestions = TestQuestion::whereIn('test_id', $studentsDidAss->pluck('test_id'))->with('game')->get();
-        
+
         $arr = [];
         $games = [];
 

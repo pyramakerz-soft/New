@@ -60,7 +60,7 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post("student_progress_by_group", [StudentController::class, "StudentProgressByGroup"])->name("student_progress_by_group");
     Route::post("assignAssessment", [StudentController::class, "assignAssessment"])->name("assignAssessment");
     Route::get("studentAssignments", [StudentController::class, "studentAssignments"])->name("studentAssignments");
-    Route::get("studentAssignmentsGames", [StudentController::class, "studentAssignmentsGames"])->name("studentAssignmentsGames");
+    Route::post("studentAssignmentsGames", [StudentController::class, "studentAssignmentsGames"])->name("studentAssignmentsGames");
     Route::get("teacherAssignments", [TeachersController::class, "teacherAssignments"])->name("teacherAssignments");
     Route::post("studentsInClass", [StudentController::class, "studentsInClass"])->name("studentsInClass");
     Route::post("TeacherAssignmentFilter", [TeachersController::class, "TeacherAssignmentFilter"])->name("TeacherAssignmentFilter");
