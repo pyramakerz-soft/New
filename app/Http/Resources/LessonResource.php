@@ -56,8 +56,10 @@ class LessonResource extends JsonResource
                     'correct_ans' => $game->correct_ans,
                     'is_edited' => $game->is_edited,
                     'game_types' => $game->gameTypes,
+                    'is_active' => $game->is_active,
                 ];
             }
+            
             $lesson_stars = ceil($total_stars/sizeof($gamesWithStars));
             $arr[] = [
                 'id' => $data->id,

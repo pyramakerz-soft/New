@@ -30,6 +30,9 @@ class GameResource extends Resource
             ->schema([
               
                     
+                     Forms\Components\Toggle::make('is_active')
+                    ->required()
+                    ,
                      Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(150),
@@ -137,7 +140,8 @@ class GameResource extends Resource
     {
         return $table
             ->columns([
-                
+                Tables\Columns\IconColumn::make('is_active')
+    ->boolean(),
                 Tables\Columns\TextColumn::make('id')
                     ->numeric()
                     ->sortable(),

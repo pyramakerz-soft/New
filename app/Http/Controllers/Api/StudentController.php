@@ -13,6 +13,8 @@ use App\Models\StudentTest;
 use App\Models\Test;
 use App\Models\TestTypes;
 use App\Models\User;
+use App\Models\Stage;
+use App\Models\Course;
 use App\Models\StudentProgress;
 use App\Traits\HelpersTrait;
 use Illuminate\Http\Request;
@@ -134,6 +136,47 @@ $data['programs']->userCourses->each(function($course) {
         return $this->returnData('data', $data, "All groups for the student");
 
     }
+    
+    public function studentProgramsAssign()
+{
+    // Fetch the user and related programs with courses and student tests
+    $user = User::with([
+        'userCourses.program',
+        'userCourses.program.course',
+        'userCourses.program.student_tests' => function($query) {
+            $query->where('student_id', auth()->user()->id)
+                  ->where('status', 0)
+                  ->where('start_date', '<=', now()->format('Y-m-d'))
+                  ->where('due_date', '>=', now()->format('Y-m-d'));
+        }
+    ])->where('id', auth()->user()->id)->first();
+
+    if (!$user) {
+        return $this->returnData('data', [], 'User not found');
+    }
+
+    // Filter programs to ensure they have student tests and handle unique lesson_id
+    $filteredPrograms = $user->userCourses->filter(function($course) {
+        $course->program->student_tests = $course->program->student_tests
+            ->where('due_date', '>=', now()->format('Y-m-d'))
+            ->where('start_date', '<=', now()->format('Y-m-d'))
+            ->unique('lesson_id');
+        return $course->program->student_tests->isNotEmpty();
+    });
+
+    $data['programs'] = $filteredPrograms->values();
+
+    // Fetch test types and count of pending student tests
+    $data['test_types'] = TestTypes::all();
+    $data['count'] = StudentTest::where('student_id', auth()->user()->id)
+        ->where('status', '=', 0)
+        ->where('due_date', '>=', now()->format('Y-m-d'))
+        ->where('start_date', '<=', now()->format('Y-m-d'))
+        ->count();
+
+    return $this->returnData('data', $data, "All groups for the student");
+}
+
     /**
      * @OA\Post(
      *     path="/api/studentsInClass",
@@ -155,7 +198,9 @@ $data['programs']->userCourses->each(function($course) {
      */
     public function studentsInClass(Request $request){
     $students_in_group = GroupStudent::where('group_id',$request->group_id)->get();
+    
     $data['group'] = Group::find($request->group_id)->name;
+    $data['group_name'] = Course::find(Program::find(Group::find($request->group_id)->program_id)->course_id)->name.' '.Stage::find(Program::find(Group::find($request->group_id)->program_id)->stage_id)->name.' '.Group::find($request->group_id)->sec_name;
     $arr =array();
     foreach($students_in_group as $student){
         array_push($arr,
@@ -550,9 +595,9 @@ public function StudentProgress(Request $request)
             $division = 1;
         }
     $data['reports_percentages'] = [
-        'three_star' => (($threestars / $division)*100),
-        'two_star' => (($twostars / $division)*100),
-         'one_star' => (($onestar / $division)*100),
+        'three_star' => round(($threestars / $division)*100,2),
+        'two_star' => round(($twostars / $division)*100,2),
+         'one_star' => round(($onestar / $division)*100,2),
 
     ];
 }

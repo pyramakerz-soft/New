@@ -72,7 +72,7 @@ class StudentProgressResource extends JsonResource
                     
 
 
-    $gameName = $test->game->inst;
+    $gameName = $test->game->inst ?? '-';
 
         array_push($arr, [
             'test_name' => $testName,

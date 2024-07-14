@@ -56,8 +56,8 @@ class EbookResource extends Resource
                 //     ->searchable(),
                 Select::make('is_downloadable')->label('Downloadable')
                 ->options([
-                    'true' => 'True',
-                    'false' => 'False',
+                    '1' => 'True',
+                    '0' => 'False',
                 ])
                 ->searchable(),
             ]);
