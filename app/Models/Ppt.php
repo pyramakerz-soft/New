@@ -22,8 +22,8 @@ class PPT extends Model
     {
         return !is_null($this->file_path);
     }
-    public function getFilePathAttribute($val)
+    public function getImageAttribute($val)
     {
-        return ($val !== null) ? asset('storage/' . $val) : null;
+        return ($val !== null) ? asset('storage/' . $val) : "";
     }
 }
