@@ -746,9 +746,9 @@ if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL &&
                                 ->where('program_id', $request->program_id);
 
 if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-        $fromDate = $request->from_date;
-        $toDate = $request->to_date;
-        $progressQuery->whereBetween('created_at', [$fromDate, $toDate]);
+        $from_date = date('Y-m-d',strtotime($request->from_date));
+        $to_date = date('Y-m-d',strtotime($request->to_date));
+        $progressQuery->whereBetween('created_at', [$from_date, $to_date]);
     }
     // Filter by month of created_at date if provided
     if ($request->filled('month')) {
@@ -764,11 +764,11 @@ if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL &&
     }
 
     // Filter by date range if provided
-    if ($request->filled('from_date') && $request->filled('to_date')) {
-        $from_date = Carbon::parse($request->from_date)->startOfDay();
-        $to_date = Carbon::parse($request->to_date)->endOfDay();
-        $progressQuery->whereBetween('student_progress.created_at', [$from_date, $to_date]);
-    }
+    // if ($request->filled('from_date') && $request->filled('to_date')) {
+    //     $from_date = Carbon::parse($request->from_date)->startOfDay();
+    //     $to_date = Carbon::parse($request->to_date)->endOfDay();
+    //     $progressQuery->whereBetween('student_progress.created_at', [$from_date, $to_date]);
+    // }
 
     // Filter by stars if provided
     if ($request->filled('stars')) {
@@ -780,7 +780,7 @@ if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL &&
     $progress = $progressQuery->orderBy('created_at', 'ASC')
                               ->select('student_progress.*')
                               ->get();
-
+ 
     // Initialize monthlyScores and starCounts arrays
     $monthlyScores = [];
     $starCounts = [];
@@ -935,13 +935,13 @@ public function skillReport(Request $request)
             $game = $test->game;
 
             // foreach ($game->gameTypes as $gameType) {
-                dd($game->gameTypes);
-                    if (GameType::with(['skills'])->where('id',$gameType->id)->count() > 0) continue;
-                if ($gameType && $gameType->skills) {
+                // dd($game->gameTypes);
+                    // if (GameType::with(['skills'])->where('id',$gameType->id)->count() > 0) continue;
+                if ($game->gameTypes && $game->gameTypes->skills) {
                     
                     // Check if this GameType has skills
-                    if (!$gameType->skills->isEmpty()) {
-                        foreach ($gameType->skills as $gameSkill) {
+                    if (!$game->gameTypes->skills->isEmpty()) {
+                        foreach ($game->gameTypes->skills as $gameSkill) {
                             if (!$gameSkill->skill) continue;
 
                             $skill = $gameSkill->skill;
@@ -965,7 +965,7 @@ public function skillReport(Request $request)
                                 ];
                             }
 
-                            // Sum the scores for each skill and update current level if needed
+                            // Sum the scores for each skill and update current level if needed*
                             $skillsData[$skillName]['total_score'] += $progress->score;
                             if ($currentLevel === 'Mastered') {
                                 $skillsData[$skillName]['current_level'] = 'Mastered';
@@ -991,7 +991,7 @@ public function skillReport(Request $request)
     Excel::store(new SkillsExport($finalData), $fileName, 'public');
 
     // Return the downloadable link
-    $filePath = Storage::url($fileName);
+    $filePath = 'https://ambernoak.co.uk/Fillament/public'.Storage::url($fileName);
 
     return $this->returnData('data', ['download_link' => $filePath], 'Skill Report');
 }
