@@ -100,8 +100,8 @@ class AssignmentController extends Controller
                         'lesson_id' => $lesson_id,
                         'program_id' => $program_id,
                         'teacher_id' => $teacher_id,
-                        'start_date' => date('Y-m-d', strtotime($request->start_date)),
-                        'due_date' => date('Y-m-d', strtotime($request->due_date)),
+                        'start_date' => Carbon::createFromFormat('d/m/Y', $request->start_date)->format('Y-m-d'),
+                        'due_date' => Carbon::createFromFormat('d/m/Y', $request->due_date)->format('Y-m-d'),
                         'status' => 0,
 
                     ]);
