@@ -79,19 +79,19 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
 
     Route::get('categories', [CategoryController::class, 'index']);
     Route::get('categories/{id}', [CategoryController::class, 'show']);
-    Route::get('categories/{id}/all-data', [CategoryController::class, 'getAllCategoryData']);
+    Route::post('categories/{id}/all-data', [CategoryController::class, 'getAllCategoryData']);
     Route::post('/assignments', [AssignmentController::class, 'assign']);
 
 
 
     /////////////////////// Teacher Reports /////////////////////////////////
-        Route::post('/teach-comp-report', [TeachersController::class, 'completionReport']);
-        Route::post('/teach-mastery-report', [TeachersController::class, 'masteryReport']);
-        Route::post('/teach-trials-report', [TeachersController::class, 'numOfTrialsReport']);
-        Route::post('/teach-skill-report', [TeachersController::class, 'skillReport']); 
+    Route::post('/teach-comp-report', [TeachersController::class, 'completionReport']);
+    Route::post('/teach-mastery-report', [TeachersController::class, 'masteryReport']);
+    Route::post('/teach-trials-report', [TeachersController::class, 'numOfTrialsReport']);
+    Route::post('/teach-skill-report', [TeachersController::class, 'skillReport']);
     /////////////////////// Classes Reports /////////////////////////////////
-        Route::post('/class-comp-report', [TeachersController::class, 'classCompletionReport']);
-        Route::post('/class-mastery-report', [TeachersController::class, 'classmasteryReport']);
-        Route::post('/class-trials-report', [TeachersController::class, 'classnumOfTrialsReport']);
-        Route::post('/class-skill-report', [TeachersController::class, 'classskillReport']); 
+    Route::post('/class-comp-report', [TeachersController::class, 'classCompletionReport']);
+    Route::post('/class-mastery-report', [TeachersController::class, 'classmasteryReport']);
+    Route::post('/class-trials-report', [TeachersController::class, 'classnumOfTrialsReport']);
+    Route::post('/class-skill-report', [TeachersController::class, 'classskillReport']);
 });

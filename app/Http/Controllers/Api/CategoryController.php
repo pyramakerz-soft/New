@@ -27,53 +27,38 @@ class CategoryController extends Controller
         $category = Category::find($id);
         return $this->returnData('data', $category, "category");
     }
-    public function getAllCategoryData($id)
+    public function getAllCategoryData(Request $request, $id)
     {
+        // $request->validate([
+        //     'unit_id' => 'required|integer',
+        // ]);
         $category = Category::findOrFail($id);
 
-        $videos = Video::where('category_id', $id)->get();
-        $ebooks = Ebook::where('category_id', $id)->get();
-        $lessonPlans = LessonPlan::where('category_id', $id)->get();
-        $ppts = PPT::where('category_id', $id)->get();
+        if ($request->filled('unit_id')) {
+            $videos = Video::where('category_id', $id)->where('unit_id', $request->unit_id)->get();
+            $ebooks = Ebook::where('category_id', $id)->where('unit_id', $request->unit_id)->get();
+            $lessonPlans = LessonPlan::where('category_id', $id)->where('unit_id', $request->unit_id)->get();
+            $ppts = PPT::where('category_id', $id)->where('unit_id', $request->unit_id)->get();
 
-        $data = [
-            'category' => $category,
-            'video' => $videos,
-            'web' => $ebooks,
-            'file' => $lessonPlans->merge($ppts),
-        ];
-        return $this->returnData('data', $data, "All Data");
+            $data = [
+                'category' => $category,
+                'video' => $videos,
+                'web' => $ebooks,
+                'file' => $lessonPlans->merge($ppts),
+            ];
+            return $this->returnData('data', $data, "All Data");
+        } else {
+            // return response()->json(['message' => 'The unit is required'], 404);
+            return $this->returnError('S000', "The unit is required");
+
+
+        }
+
+
 
 
     }
-    // public function video($categoryId)
-    // {
 
-    //     $video = Video::where('category_id', $categoryId)->get();
-    //     return $this->returnData('data', $video, "All Professional Development");
-
-    // }
-
-    // public function ebook($categoryId)
-    // {
-    //     $ebook = Ebook::where('category_id', $categoryId)->get();
-    //     return $this->returnData('data', $ebook, "All Teacher E-books");
-
-    // }
-
-    // public function lessonPlan($categoryId)
-    // {
-    //     $lessonPlan = LessonPlan::where('category_id', $categoryId)->get();
-    //     return $this->returnData('data', $lessonPlan, "All Lesson plans");
-
-    // }
-
-    // public function ppt($categoryId)
-    // {
-    //     $ppt = PPT::where('category_id', $categoryId)->get();
-    //     return $this->returnData('data', $ppt, "All PPT");
-
-    // }
     public function download($type, $id)
     {
         $model = null;
