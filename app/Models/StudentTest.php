@@ -12,17 +12,18 @@ class StudentTest extends Model
 
     public function tests()
     {
-        return $this->belongsTo(Test::class,'test_id');
+        return $this->belongsTo(Test::class, 'test_id');
     }
     public function user()
     {
-        return $this->belongsTo(User::class,'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
-    
-    
-    public function  getImageAttribute($val)
+
+
+
+    public function getImageAttribute($val)
     {
         return ($val !== null) ? asset('test_image/' . $val) : "";
     }
-    
+
 }
