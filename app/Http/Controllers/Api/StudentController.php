@@ -175,7 +175,7 @@ class StudentController extends Controller
                     ->where('status', 0)
                     ->where('start_date', '<=', date('Y-m-d', strtotime(now())))
                     ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
- 
+
                 ;
             },
 
@@ -189,6 +189,9 @@ class StudentController extends Controller
                 ->unique('lesson_id')
                 ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
                 ->where('start_date', '<=', date('Y-m-d', strtotime(now())));
+            $course->program->student_tests->each(function ($student_test) {
+                $student_test->assignment_name = $student_test->tests->name ?? 'N/A';
+            });
 
         });
 
