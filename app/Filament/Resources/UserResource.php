@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
 use App\Filament\Resources\UserResource\RelationManagers\UserCoursesRelationManager;
+use App\Filament\Resources\UserResource\RelationManagers\DetailsRelationManager;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Components\Field;
@@ -52,6 +53,7 @@ class UserResource extends Resource
                     ->required()
                     ->preload()
                 ,
+
 
                 // ->iconPosition(IconPosition::Before) // Before | After | (string - before | after)
                 // ->alignment(Alignment::Center) // Start | Center | End | (string - start | center | end)
@@ -126,6 +128,7 @@ class UserResource extends Resource
     {
         return [
             UserCoursesRelationManager::class,
+            DetailsRelationManager::class,
         ];
     }
 

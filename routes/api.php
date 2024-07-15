@@ -45,6 +45,8 @@ Route::group(['namespace' => 'Api', 'prefix' => 'auth'], function () {
 
 
 Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
+    Route::post("assignAssessment", [TeachersController::class, "assignAssessment"])->name("assignAssessment");
+
 
     // Route::get("units", [UnitsController::class, "units"])->name("units");
     Route::get("student-profile/{email}", [StudentController::class, "index"])->name("student-profile");
@@ -59,7 +61,6 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::get("getTeacherData", [AuthController::class, "getTeacherData"])->name("getTeacherData");
     Route::post("student_progress", [StudentController::class, "StudentProgress"])->name("student_progress");
     Route::post("student_progress_by_group", [StudentController::class, "StudentProgressByGroup"])->name("student_progress_by_group");
-    Route::post("assignAssessment", [StudentController::class, "assignAssessment"])->name("assignAssessment");
     Route::get("studentAssignments", [StudentController::class, "studentAssignments"])->name("studentAssignments");
     Route::post("studentAssignmentsGames", [StudentController::class, "studentAssignmentsGames"])->name("studentAssignmentsGames");
     Route::get("teacherAssignments", [TeachersController::class, "teacherAssignments"])->name("teacherAssignments");
@@ -91,8 +92,8 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post('/teach-skill-report', [TeachersController::class, 'skillReport']);
     /////////////////////// Classes Reports /////////////////////////////////
 
-        Route::post('/class-comp-report', [TeachersController::class, 'classCompletionReport']);
-        Route::post('/class-mastery-report', [TeachersController::class, 'classMasteryReport']);
-        Route::post('/class-trials-report', [TeachersController::class, 'classNumOfTrialsReport']);
-        Route::post('/class-skill-report', [TeachersController::class, 'classSkillReport']); 
+    Route::post('/class-comp-report', [TeachersController::class, 'classCompletionReport']);
+    Route::post('/class-mastery-report', [TeachersController::class, 'classMasteryReport']);
+    Route::post('/class-trials-report', [TeachersController::class, 'classNumOfTrialsReport']);
+    Route::post('/class-skill-report', [TeachersController::class, 'classSkillReport']);
 });

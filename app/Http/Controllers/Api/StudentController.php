@@ -136,7 +136,7 @@ class StudentController extends Controller
      */
     public function studentPrograms()
     {
-        // // $data['programs'] = User::with(['userCourses.program','userCourses.program.course','userCourses.program.student_tests'])->where('id',auth()->user()->id)->first();
+        // $data['programs'] = User::with(['userCourses.program','userCourses.program.course','userCourses.program.student_tests'])->where('id',auth()->user()->id)->first();
         // $data['programs'] = User::with([
         //     'userCourses.program',
         //     'userCourses.program.course',
@@ -151,6 +151,11 @@ class StudentController extends Controller
         // // Filter to ensure unique lesson_id in student_tests
         // $data['programs']->userCourses->each(function ($course) {
         //     $course->program->student_tests = $course->program->student_tests->unique('lesszon_id')->where('due_date', '>=', date('Y-m-d', strtotime(now())))->where('start_date', '<=', date('Y-m-d', strtotime(now())));
+        //     $course->program->student_tests->each(function ($student_test) {
+        //         // $student_test->assignment_name = $student_test->tests->name ?? 'N/A';
+        //         $student_test->assignment_name = $student_test->tests->name ?? 'N/A';
+
+        //     });
         // });
 
 
@@ -170,8 +175,7 @@ class StudentController extends Controller
                     ->where('status', 0)
                     ->where('start_date', '<=', date('Y-m-d', strtotime(now())))
                     ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
-                    // ->with('tests')
-                    // ->with('tests:id,name');
+ 
                 ;
             },
 
@@ -186,10 +190,6 @@ class StudentController extends Controller
                 ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
                 ->where('start_date', '<=', date('Y-m-d', strtotime(now())));
 
-            // Add assignment name to each student_test
-            $course->program->student_tests->each(function ($student_test) {
-                $student_test->assignment_name = $student_test->tests->name ?? 'N/A';
-            });
         });
 
         $data['test_types'] = TestTypes::all();
@@ -778,21 +778,5 @@ class StudentController extends Controller
      *     )
      * )
      */
-    public function assignAssessment(Request $request)
-    {
-        foreach ($request->students_id as $student_id) {
-            $assign_test = new StudentTest();
-            $assign_test->student_id = $student_id;
-            $assign_test->test_id = $request->test_id;
-            $assign_test->lesson_id = Test::find($request->test_id)->lesson_id;
-            $assign_test->status = 0;
-            $assign_test->program_id = Test::find($request->test_id)->program_id;
-            $assign_test->teacher_id = auth()->user()->id;
-            $assign_test->start_date = date('Y-m-d', strtotime($request->start_date));
-            $assign_test->due_date = date('Y-m-d', strtotime($request->due_date));
-            // $assign_test->due_date = date('Y-m-d',strtotime($request->due_date));
-            $assign_test->save();
-        }
-        return $this->returnSuccessMessage('Test Assigned');
-    }
+
 }
