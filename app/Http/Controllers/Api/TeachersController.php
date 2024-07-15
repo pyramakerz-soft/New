@@ -20,6 +20,7 @@ use App\Models\GameType;
 use App\Models\TestTypes;
 use App\Models\GameSkills;
 use App\Models\Skill;
+use App\Models\User;
 
 use App\Http\Resources\TeacherAssignmentFilterResource;
 use Illuminate\Http\Request;
@@ -1604,7 +1605,6 @@ public function classSkillReport(Request $request)
         }
 
         $studentProgress = $studentProgressQuery->get();
-
         if ($studentProgress->isEmpty()) {
             continue;
         }
@@ -1633,7 +1633,7 @@ public function classSkillReport(Request $request)
 
                             // Use student ID and skill name as the key to aggregate scores
                             if (!isset($skillsData[$studentId])) {
-                                $student = Student::find($studentId);
+                                $student = User::find($studentId);
                                 $skillsData[$studentId] = [
                                     'student_name' => $student->name,
                                     'skills' => []
