@@ -136,30 +136,69 @@ class StudentController extends Controller
      */
     public function studentPrograms()
     {
-        // $data['programs'] = User::with(['userCourses.program','userCourses.program.course','userCourses.program.student_tests'])->where('id',auth()->user()->id)->first();
+        // // $data['programs'] = User::with(['userCourses.program','userCourses.program.course','userCourses.program.student_tests'])->where('id',auth()->user()->id)->first();
+        // $data['programs'] = User::with([
+        //     'userCourses.program',
+        //     'userCourses.program.course',
+        //     'userCourses.program.student_tests' => function ($query) {
+        //         $query->where('student_id', auth()->user()->id)
+        //             ->where('status', 0)->where('start_date', '<=', date('Y-m-d', strtotime(now())))->where('due_date', '>=', date('Y-m-d', strtotime(now())));
+        //     }
+        // ])
+        //     ->where('id', auth()->user()->id)
+        //     ->first();
+
+        // // Filter to ensure unique lesson_id in student_tests
+        // $data['programs']->userCourses->each(function ($course) {
+        //     $course->program->student_tests = $course->program->student_tests->unique('lesszon_id')->where('due_date', '>=', date('Y-m-d', strtotime(now())))->where('start_date', '<=', date('Y-m-d', strtotime(now())));
+        // });
+
+
+
+
+
+
+        // $data['test_types'] = TestTypes::all();
+        // $data['count'] = StudentTest::where('student_id', auth()->user()->id)->where('status', '=', '0')->where('due_date', '>=', date('Y-m-d', strtotime(now())))->where('start_date', '<=', date('Y-m-d', strtotime(now())))->count();
+        // return $this->returnData('data', $data, "All groups for the student");
+
         $data['programs'] = User::with([
             'userCourses.program',
             'userCourses.program.course',
             'userCourses.program.student_tests' => function ($query) {
                 $query->where('student_id', auth()->user()->id)
-                    ->where('status', 0)->where('start_date', '<=', date('Y-m-d', strtotime(now())))->where('due_date', '>=', date('Y-m-d', strtotime(now())));
-            }
+                    ->where('status', 0)
+                    ->where('start_date', '<=', date('Y-m-d', strtotime(now())))
+                    ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
+                    // ->with('tests')
+                    ->with('tests:id,name');
+                ;
+            },
+
         ])
             ->where('id', auth()->user()->id)
             ->first();
 
         // Filter to ensure unique lesson_id in student_tests
         $data['programs']->userCourses->each(function ($course) {
-            $course->program->student_tests = $course->program->student_tests->unique('lesszon_id')->where('due_date', '>=', date('Y-m-d', strtotime(now())))->where('start_date', '<=', date('Y-m-d', strtotime(now())));
+            $course->program->student_tests = $course->program->student_tests
+                ->unique('lesson_id')
+                ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
+                ->where('start_date', '<=', date('Y-m-d', strtotime(now())));
+
+            // Add assignment name to each student_test
+            $course->program->student_tests->each(function ($student_test) {
+                $student_test->assignment_name = $student_test->test->name ?? 'N/A';
+            });
         });
 
-
-
-
-
-
         $data['test_types'] = TestTypes::all();
-        $data['count'] = StudentTest::where('student_id', auth()->user()->id)->where('status', '=', '0')->where('due_date', '>=', date('Y-m-d', strtotime(now())))->where('start_date', '<=', date('Y-m-d', strtotime(now())))->count();
+        $data['count'] = StudentTest::where('student_id', auth()->user()->id)
+            ->where('status', '=', '0')
+            ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
+            ->where('start_date', '<=', date('Y-m-d', strtotime(now())))
+            ->count();
+
         return $this->returnData('data', $data, "All groups for the student");
 
     }
