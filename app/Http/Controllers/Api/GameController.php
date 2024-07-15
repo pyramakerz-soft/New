@@ -227,7 +227,6 @@ class GameController extends Controller
         $max_games = StudentDegree::whereIn('game_id',$games_id)->where('student_id',auth()->user()->id)->sum('stars');
         $lstars = ceil($max_games/$count_games);
         $lesson->stars = $lstars;
-        dd($lesson);
         $lesson->update();
         // dd($count_games,$max_games,);
         }

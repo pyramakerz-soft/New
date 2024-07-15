@@ -27,7 +27,7 @@ return [
     */
 
     'view_path' => resource_path('views/livewire'),
-    // 'asset_url' => 'Fillament/public/livewire/livewire.js',
+     'asset_url' => 'Fillament/public/livewire/livewire.js',
     /*
     |---------------------------------------------------------------------------
     | Layout
