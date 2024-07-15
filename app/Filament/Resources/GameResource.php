@@ -72,7 +72,7 @@ class GameResource extends Resource
         return Game::join('game_types', 'games.game_type_id', 'game_types.id')
             ->join('lessons', 'games.lesson_id', 'lessons.id')
             ->join('game_letters', 'games.id', 'game_letters.game_id')
-            ->select(DB::raw("CONCAT('Type : ', game_types.name, ' / Lesson : ', lessons.name, ' / Main Letter : ', games.main_letter, ' / Game Letters : ', GROUP_CONCAT(game_letters.letter ORDER BY game_letters.letter SEPARATOR ', ')) AS name"), 'games.id as id')
+            ->select(DB::raw("CONCAT('ID : ',games.id,' / Type : ', game_types.name, ' / Lesson : ', lessons.name, ' / Main Letter : ', games.main_letter, ' / Game Letters : ', GROUP_CONCAT(game_letters.letter ORDER BY game_letters.letter SEPARATOR ', ')) AS name"), 'games.id as id')
             ->groupBy('games.id', 'game_types.name', 'lessons.name', 'games.main_letter')
             ->pluck('name', 'id')
             ->toArray();
@@ -86,7 +86,7 @@ class GameResource extends Resource
         return Game::join('game_types', 'games.game_type_id', 'game_types.id')
             ->join('lessons', 'games.lesson_id', 'lessons.id')
             ->join('game_letters', 'games.id', 'game_letters.game_id')
-            ->select(DB::raw("CONCAT('Type : ', game_types.name, ' / Lesson : ', lessons.name, ' / Main Letter : ', games.main_letter, ' / Game Letters : ', GROUP_CONCAT(game_letters.letter ORDER BY game_letters.letter SEPARATOR ', ')) AS name"), 'games.id as id')
+            ->select(DB::raw("CONCAT('ID : ',games.id,' / Type : ', game_types.name, ' / Lesson : ', lessons.name, ' / Main Letter : ', games.main_letter, ' / Game Letters : ', GROUP_CONCAT(game_letters.letter ORDER BY game_letters.letter SEPARATOR ', ')) AS name"), 'games.id as id')
             ->groupBy('games.id', 'game_types.name', 'lessons.name', 'games.main_letter')
             ->pluck('name', 'id')
             ->toArray();

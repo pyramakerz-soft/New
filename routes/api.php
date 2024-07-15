@@ -90,8 +90,9 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post('/teach-trials-report', [TeachersController::class, 'numOfTrialsReport']);
     Route::post('/teach-skill-report', [TeachersController::class, 'skillReport']);
     /////////////////////// Classes Reports /////////////////////////////////
-    Route::post('/class-comp-report', [TeachersController::class, 'classCompletionReport']);
-    Route::post('/class-mastery-report', [TeachersController::class, 'classmasteryReport']);
-    Route::post('/class-trials-report', [TeachersController::class, 'classnumOfTrialsReport']);
-    Route::post('/class-skill-report', [TeachersController::class, 'classskillReport']);
+
+        Route::post('/class-comp-report', [TeachersController::class, 'classCompletionReport']);
+        Route::post('/class-mastery-report', [TeachersController::class, 'classMasteryReport']);
+        Route::post('/class-trials-report', [TeachersController::class, 'classNumOfTrialsReport']);
+        Route::post('/class-skill-report', [TeachersController::class, 'classSkillReport']); 
 });
