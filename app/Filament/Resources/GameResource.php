@@ -133,6 +133,7 @@ class GameResource extends Resource
                     ->numeric()
                     ->default(50),
                 Forms\Components\TextInput::make('correct_ans')->label('Correct Answer'),
+                Forms\Components\TextInput::make('sentence')->label('Sentence'),
             ]);
     }
 

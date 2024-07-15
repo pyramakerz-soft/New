@@ -7,6 +7,7 @@ use App\Models\Game;
 use App\Models\GameType;
 use App\Models\StudentDegree;
 use App\Models\UserDetails;
+use App\Models\Lesson;
 use Illuminate\Http\Request;
 use App\Traits\HelpersTrait;
 use App\Http\Resources\GameTypesResource;
@@ -176,6 +177,8 @@ class GameController extends Controller
         $game = Game::find($request->game_id);
         $game->stars = $request->stars;
         $game->save();
+        
+        
         return $this->returnData('data', $game, "Game Completed");
     }
 
@@ -218,7 +221,16 @@ class GameController extends Controller
                 $new->student_id = auth()->user()->id;
                 $new->save();
             }
+            $lesson = Lesson::find(Game::find($game_id)->lesson_id);
+            $games_id = Game::where('lesson_id',$lesson->id)->pluck('id');
+        $count_games = StudentDegree::whereIn('game_id',$games_id)->where('student_id',auth()->user()->id)->count();
+        $max_games = StudentDegree::whereIn('game_id',$games_id)->where('student_id',auth()->user()->id)->sum('stars');
+        $lstars = ceil($max_games/$count_games);
+        $lesson->stars = $lstars;
+        dd($lesson);
+        $lesson->update();
+        // dd($count_games,$max_games,);
         }
-        return $this->returnData('data', $new , "Game Completed");
+        return $this->returnData('data', $new , "Game Completed & Lesson Stars updated");
     }
 }
