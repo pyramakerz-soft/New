@@ -68,7 +68,7 @@ class LessonResource extends JsonResource
                 'main_letter' => $data->main_letter,
                 'warmup_id' => $data->warmup_id,
                 'unit_id' => $data->unit_id,
-                'stars' => $data->studentDegrees->stars ?? 0,
+                'stars' => $data->stars ?? 0,
                 'chapter' => Unit::find($data->unit_id),
                 'type' => $type,
                 'games' => $gamesWithStars,
