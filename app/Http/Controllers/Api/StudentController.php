@@ -18,6 +18,7 @@ use App\Models\TestTypes;
 use App\Models\User;
 use App\Models\Stage;
 use App\Models\Course;
+use App\Models\Lesson;
 use App\Models\StudentProgress;
 use App\Traits\HelpersTrait;
 use Illuminate\Http\Request;
@@ -170,8 +171,7 @@ class StudentController extends Controller
                     ->where('status', 0)
                     ->where('start_date', '<=', date('Y-m-d', strtotime(now())))
                     ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
-                    // ->with('tests')
-                    // ->with('tests:id,name');
+                    // ->with('tests');
                 ;
             },
 
@@ -727,7 +727,6 @@ class StudentController extends Controller
 
                 // Calculate the score for each test
                 $testScore = [
-                    'test_name' => $course->test_name,
                     'test_id' => $course->test_id,
                     'score' => $course->score,
                 ];
@@ -794,5 +793,33 @@ class StudentController extends Controller
             $assign_test->save();
         }
         return $this->returnSuccessMessage('Test Assigned');
+    }
+    
+    
+    public function finishAssignment(Request $request){
+        $progress = new StudentProgress();
+        $progress->student_id = auth()->user()->id;
+        $progress->program_id = Test::find($request->test_id)->program_id;
+        $progress->unit_id = Lesson::find(Test::find($request->test_id)->program_id)->unit_id;
+        $progress->program_id = Test::find($request->test_id)->lesson_id;
+        $progress->is_done = 1;
+        if($request->stars == 0)
+        $progress->score = 10;
+        elseif($request->stars == 1)
+        $progress->score = 30;
+        elseif($request->stars == 2)
+        $progress->score = 60;
+        elseif($request->stars == 3)
+        $progress->score = 100;
+        
+        $progress->time = 10;
+        $progress->is_correct = 1;
+        $progress->mistake_count = $request->mistake_count;
+        $progress->test_id = $request->test_id;
+        $progress->stars = $request->stars;
+        $progress->save();
+        
+        
+        return $this->returnData('data', $progress, 'Progress Saved!');
     }
 }
