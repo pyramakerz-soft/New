@@ -518,7 +518,7 @@ class StudentController extends Controller
 
         // Initialize query builder with student ID and program ID
         $progressQuery = StudentProgress::where('student_id', $studentId)
-            ->where('program_id', $request->program_id);
+            ->where('student_progress.program_id', $request->program_id);
 
         // Filter by month of created_at date if provided
         if ($request->filled('month')) {
