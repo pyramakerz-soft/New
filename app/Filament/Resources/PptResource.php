@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\DB;
 class PPTResource extends Resource
 {
     protected static ?string $model = PPT::class;
-    protected static ?string $navigationGroup = 'Categories';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
