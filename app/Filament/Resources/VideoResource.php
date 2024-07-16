@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 class VideoResource extends Resource
 {
     protected static ?string $model = Video::class;
+    protected static ?string $navigationGroup = 'Categories';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 

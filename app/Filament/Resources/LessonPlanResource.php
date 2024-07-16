@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 class LessonPlanResource extends Resource
 {
     protected static ?string $model = LessonPlan::class;
+    protected static ?string $navigationGroup = 'Categories';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 

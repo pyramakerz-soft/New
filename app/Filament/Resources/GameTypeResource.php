@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class GameTypeResource extends Resource
 {
     protected static ?string $model = GameType::class;
+    protected static ?string $navigationGroup = 'Games';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 

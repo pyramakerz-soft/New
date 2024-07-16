@@ -21,6 +21,7 @@ class QuestionBankResource extends Resource
 {
     protected static ?string $model = QuestionBank::class;
     protected static ?string $title = 'View Questions';
+    protected static ?string $navigationGroup = 'Templates';
 
     protected static ?string $heading = 'View Questions';
 

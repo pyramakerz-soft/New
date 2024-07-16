@@ -2,12 +2,13 @@
 
 namespace App\Filament\Resources\GameResource\RelationManagers;
 
+use App\Livewire\ImageSelect;
 use App\Models\GameImage;
 use App\Models\GameLetter;
-use Closure;
+// use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Illuminate\Database\Eloquent\Collection;
+// use Illuminate\Database\Eloquent\Collection;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -34,8 +35,13 @@ class GameImagesRelationManager extends RelationManager
                     })->searchable()
                     ->preload()
                     ->required(),
-                    Forms\Components\Toggle::make('correct')->required(),
-                    Forms\Components\TextInput::make('word')->required(),
+                Forms\Components\Toggle::make('correct')->required(),
+                Forms\Components\TextInput::make('word')->required(),
+                // Forms\Components\ViewField::make('image_select')
+                // ->view('Livewire.imageSelect')
+                // ->name('image_select')
+                // ->label('Select Image')
+                // // ->wireModel('selected_image_id'),
             ]);
     }
 
@@ -46,7 +52,7 @@ class GameImagesRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\ImageColumn::make('image'),
                 Tables\Columns\TextColumn::make('gameLetter.letter'),
-                
+
 
             ])
             ->filters([

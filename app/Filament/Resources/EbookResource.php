@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 class EbookResource extends Resource
 {
     protected static ?string $model = Ebook::class;
+    protected static ?string $navigationGroup = 'Categories';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -55,11 +56,11 @@ class EbookResource extends Resource
                 //     ])
                 //     ->searchable(),
                 Select::make('is_downloadable')->label('Downloadable')
-                ->options([
-                    '1' => 'True',
-                    '0' => 'False',
-                ])
-                ->searchable(),
+                    ->options([
+                        '1' => 'True',
+                        '0' => 'False',
+                    ])
+                    ->searchable(),
             ]);
     }
 

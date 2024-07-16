@@ -20,7 +20,7 @@ use DB;
 class GameResource extends Resource
 {
     protected static ?string $model = Game::class;
-    protected static ?string $navigationGroup = 'Templates';
+    protected static ?string $navigationGroup = 'Games';
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
     protected static ?int $navigationSort = 12;
 
