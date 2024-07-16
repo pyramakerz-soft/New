@@ -19,8 +19,6 @@ class AssignmentController extends Controller
 {
     public function assign(Request $request)
     {
-
-
         $validatedData = $request->validate([
             'student_id' => 'array',
             'student_id.*' => 'integer|exists:users,id',
@@ -35,7 +33,6 @@ class AssignmentController extends Controller
         $group = Group::find($request->group_id);
         $lesson_id = $game->lesson_id;
 
-
         $lesson = Lesson::find($lesson_id);
         if ($lesson) {
             $unit = $lesson->unit;
@@ -45,7 +42,6 @@ class AssignmentController extends Controller
             }
         }
 
-
         $games = Game::where('lesson_id', $lesson_id)
             ->join('lessons', 'lessons.id', 'games.lesson_id')
             ->join('units', 'units.id', 'lessons.unit_id')
@@ -53,7 +49,6 @@ class AssignmentController extends Controller
             ->where('game_type_id', $game->game_type_id)
             ->select('games.*')
             ->get();
-
         $games_id = $games->pluck('id');
 
         $test = Test::create([
@@ -83,9 +78,7 @@ class AssignmentController extends Controller
                 'teacher_id' => $teacher_id,
                 'start_date' => Carbon::createFromFormat('d/m/Y', $request->start_date)->format('Y-m-d'),
                 'due_date' => Carbon::createFromFormat('d/m/Y', $request->due_date)->format('Y-m-d'),
-
                 'status' => 0,
-
             ]);
         }
 
@@ -104,11 +97,9 @@ class AssignmentController extends Controller
                         'start_date' => Carbon::createFromFormat('d/m/Y', $request->start_date)->format('Y-m-d'),
                         'due_date' => Carbon::createFromFormat('d/m/Y', $request->due_date)->format('Y-m-d'),
                         'status' => 0,
-
                     ]);
                 }
             }
-
         }
         return response()->json(['message' => 'Test assigned successfully'], 201);
     }
