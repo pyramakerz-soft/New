@@ -117,6 +117,9 @@ class ProgramResource extends Resource
                     ->rules(['mimes:jpg,jpeg,png', 'max:10000'])
 
                 ,
+                // Forms\Components\Toggle::make('is_active')
+                // ->label('Active')
+                // ->required(),
             ]);
     }
     public static function table(Table $table): Table
@@ -129,6 +132,17 @@ class ProgramResource extends Resource
                 Tables\Columns\TextColumn::make('course.name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('school.name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('stage.name')->searchable()->sortable(),
+                Tables\Columns\IconColumn::make('is_active')
+                ->label('Is Active')
+                ->boolean()
+                ->action(function($record , $column){
+                    $name = $column->getName();
+                    $record->update([
+$name =>!$record->$name
+                    ]);
+                })
+                ,
+
             ])
             ->filters([
             ])
@@ -136,6 +150,7 @@ class ProgramResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
