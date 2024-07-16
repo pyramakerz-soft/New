@@ -59,8 +59,8 @@ class StudentProgressResource extends JsonResource
             // $teacher = User::find($course->teacher_id)->name;
             $status = $course->status;
             $lessonId = $course->lesson_id;
-            $lessonNum = Lesson::find($course->lesson_id)->number;
-            $lessonName = Lesson::find($course->lesson_id)->name;
+            $lessonNum = Lesson::find($course->lesson_id)->number ?? '-';
+            $lessonName = Lesson::find($course->lesson_id)->name ?? '-';
             $programId = $course->program_id;
             $programName = Program::join('courses','programs.course_id','courses.id')->where('programs.id',$course->program_id)->first()->name;
             $chapterName = Lesson::join('units','lessons.unit_id','units.id')->select('units.*')->first()->name;

@@ -930,8 +930,8 @@ class TeachersController extends Controller
     {
         $studentId = $request->student_id;
         $programId = $request->program_id;
-        $fromDate = $request->from_date;
-        $toDate = $request->to_date;
+        $fromDate = date('Y-m-d',strtotime($request->from_date));
+        $toDate = date('Y-m-d',strtotime($request->to_date));
 
         // Convert dates to Carbon instances for better manipulation
         // $fromDate = Carbon::parse($fromDate)->startOfDay();
@@ -942,9 +942,10 @@ class TeachersController extends Controller
             ->where('program_id', $programId)
             ->whereBetween('created_at', [$fromDate, $toDate])
             ->get();
+            
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-            $fromDate = $request->from_date;
-            $toDate = $request->to_date;
+            $fromDate = date('Y-m-d',strtotime($request->from_date));
+            $toDate = date('Y-m-d',strtotime($request->to_date));
             $studentProgress->whereBetween('created_at', [$fromDate, $toDate]);
         }
         if ($studentProgress->isEmpty()) {

@@ -12,6 +12,7 @@ use App\Models\Group;
 use App\Models\GroupStudent;
 use App\Models\Program;
 use App\Models\StudentTest;
+use App\Models\Lesson;
 use App\Models\Test;
 use App\Models\TestQuestion;
 use App\Models\TestTypes;
@@ -174,10 +175,8 @@ class StudentController extends Controller
                 $query->where('student_id', auth()->user()->id)
                     ->where('status', 0)
                     ->where('start_date', '<=', date('Y-m-d', strtotime(now())))
-                    ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
-
-                ;
-            },
+                    ->where('due_date', '>=', date('Y-m-d', strtotime(now())));
+                },
 
         ])
             ->where('id', auth()->user()->id)
@@ -185,13 +184,26 @@ class StudentController extends Controller
 
         // Filter to ensure unique lesson_id in student_tests
         $data['programs']->userCourses->each(function ($course) {
-            $course->program->student_tests = $course->program->student_tests
-                ->unique('lesson_id')
-                ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
-                ->where('start_date', '<=', date('Y-m-d', strtotime(now())));
-            $course->program->student_tests->each(function ($student_test) {
-                $student_test->assignment_name = $student_test->tests->name ?? 'N/A';
-            });
+            $course->program->student_tests = $course->program->student_tests->where('status','!=',1)
+                ->where('student_id', auth()->user()->id);
+                if(isset($course->program->student_tests[0]))
+                foreach($course->program->student_tests as $test){
+                    // if($test->id == '1006')
+                    // dd($test,Test::find($test->test_id)->name);
+                    $test->assignment_name = Test::find($test->test_id)->name;
+                    
+                // dd($test);
+                // array_push($test,['assignment_name' => Test::find($test->test_id)->name]);
+                // if(isset($course->program->student_tests[0]))
+                // dd($test);
+                    
+                }
+                // dd($course->program->student_tests);
+            // $course->program->student_tests->each(function ($student_test) {
+            //     // if(!$student_test->tests->name)
+            //     // dd($student_test->tests);
+            //     $student_test->assignment_name = $student_test->tests->name ?? '-';
+            // });
 
         });
 
@@ -781,5 +793,34 @@ class StudentController extends Controller
      *     )
      * )
      */
+    public function finishAssignment(Request $request){
+        $progress = new StudentProgress();
+        $progress->student_id = auth()->user()->id;
+        $progress->program_id = Test::find($request->test_id)->program_id;
+        $progress->unit_id = Lesson::find(Test::find($request->test_id)->lesson_id)->unit_id;
+        $progress->program_id = Test::find($request->test_id)->program_id;
+        $progress->lesson_id = Test::find($request->test_id)->lesson_id;
+        $progress->is_done = 1;
+        if($request->stars == 0)
+        $progress->score = 10;
+        elseif($request->stars == 1)
+        $progress->score = 30;
+        elseif($request->stars == 2)
+        $progress->score = 60;
+        elseif($request->stars == 3)
+        $progress->score = 100;
 
+        $progress->time = 10;
+        
+        $progress->is_correct = 1;
+        $progress->mistake_count = $request->mistake_count;
+        $progress->test_id = $request->test_id;
+        $progress->stars = $request->stars;
+        $progress->save();
+$s_test = StudentTest::find($request->assignment_id);
+$s_test->status = 1;
+$s_test->update();
+
+        return $this->returnData('data', $progress, 'Progress Saved!');
+    }
 }

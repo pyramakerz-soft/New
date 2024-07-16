@@ -205,31 +205,45 @@ class GameController extends Controller
      *     )
      * )
      */
-    public function solveData(Request $request)
-    {
-        foreach($request->game_id as $game_id) {
-            if(StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->count() > 0) {
-                $new = StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->first();
-                $new->game_id = $game_id;
-                $new->stars = $request->stars;
-                $new->student_id = auth()->user()->id;
-                $new->update();
-            } else {
-                $new = new StudentDegree();
-                $new->game_id = $game_id;
-                $new->stars = $request->stars;
-                $new->student_id = auth()->user()->id;
-                $new->save();
-            }
-            $lesson = Lesson::find(Game::find($game_id)->lesson_id);
-            $games_id = Game::where('lesson_id',$lesson->id)->pluck('id');
-        $count_games = StudentDegree::whereIn('game_id',$games_id)->where('student_id',auth()->user()->id)->count();
-        $max_games = StudentDegree::whereIn('game_id',$games_id)->where('student_id',auth()->user()->id)->sum('stars');
-        $lstars = ceil($max_games/$count_games);
+public function solveData(Request $request)
+{
+    foreach($request->game_id as $game_id) {
+        if(StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->count() > 0) {
+            $new = StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->first();
+            $new->game_id = $game_id;
+            $new->stars = $request->stars;
+            $new->student_id = auth()->user()->id;
+            $new->update();
+        } else {
+            $new = new StudentDegree();
+            $new->game_id = $game_id;
+            $new->stars = $request->stars;
+            $new->student_id = auth()->user()->id;
+            $new->save();
+        }
+
+        $lesson = Lesson::find(Game::find($game_id)->lesson_id);
+
+        // Get unique game IDs by game_type_id using a subquery
+        $games_id = Game::selectRaw('MIN(id) as id')
+                        ->where('lesson_id', $lesson->id)
+                        ->groupBy('game_type_id')
+                        ->pluck('id');
+
+        $count_games = StudentDegree::whereIn('game_id', $games_id)
+                                    ->where('student_id', auth()->user()->id)
+                                    ->count();
+
+        $max_games = StudentDegree::whereIn('game_id', $games_id)
+                                  ->where('student_id', auth()->user()->id)
+                                  ->sum('stars');
+
+        $lstars = ceil($max_games / $count_games);
         $lesson->stars = $lstars;
         $lesson->update();
-        // dd($count_games,$max_games,);
-        }
-        return $this->returnData('data', $new , "Game Completed & Lesson Stars updated");
     }
+    return $this->returnData('data', $new, "Game Completed & Lesson Stars updated");
+}
+
+
 }

@@ -63,6 +63,7 @@ class AssignmentController extends Controller
             'type' => 1,
             'status' => 1,
             'stage_id' => $stage_id,
+            'game_id' => $request->game_id,
         ]);
 
         foreach ($games_id as $game_id) {
