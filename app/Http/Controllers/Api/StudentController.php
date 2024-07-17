@@ -221,6 +221,9 @@ class StudentController extends Controller
 
     public function getNotification(Request $request)
     {
+        $request->validate([
+            'is_read' => 'required',
+        ]);
         $notifications = Notification::where('user_id', auth()->user()->id)->where('is_read', $request->is_read)->get();
         // Notification::where('user_id', auth()->user()->id)->where('is_read', 0)->update(['is_read' => 1]);
         if ($request->is_read == 0) {
