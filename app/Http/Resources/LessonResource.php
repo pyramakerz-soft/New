@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Unit;
+use App\Models\Lesson;
 use App\Models\GameType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -36,6 +37,7 @@ class LessonResource extends JsonResource
                 $stars = 0;
                 
                     $stars = isset($game->studentDegrees[0]->stars) ? (int)$game->studentDegrees[0]->stars : 0;
+                   
                     $total_stars += $stars;
                 $gamesWithStars[] = [
                     'id' => $game->id,
@@ -60,7 +62,7 @@ class LessonResource extends JsonResource
                 ];
             }
             
-            $lesson_stars = ceil($total_stars/sizeof($gamesWithStars));
+            $lesson_stars = round($total_stars/sizeof($gamesWithStars));
             $arr[] = [
                 'id' => $data->id,
                 'name' => $data->name,
@@ -68,7 +70,7 @@ class LessonResource extends JsonResource
                 'main_letter' => $data->main_letter,
                 'warmup_id' => $data->warmup_id,
                 'unit_id' => $data->unit_id,
-                'stars' => $data->stars ?? 0,
+                'stars' => Lesson::find($data->id)->stars,
                 'chapter' => Unit::find($data->unit_id),
                 'type' => $type,
                 'games' => $gamesWithStars,

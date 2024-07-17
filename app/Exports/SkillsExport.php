@@ -25,6 +25,8 @@ class SkillsExport implements FromArray, WithHeadings
         return [
             'Skill Name',
             'Score',
+            'Count of Games',
+            'Average Score',
             'Current Level',
             'Date'
         ];

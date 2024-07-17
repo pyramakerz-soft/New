@@ -227,7 +227,7 @@ public function solveData(Request $request)
         // Get unique game IDs by game_type_id using a subquery
         $games_id = Game::selectRaw('MIN(id) as id')
                         ->where('lesson_id', $lesson->id)
-                        ->groupBy('game_type_id')
+                        ->groupBy('game_type_id')->groupBy('audio_flag')
                         ->pluck('id');
 
         $count_games = StudentDegree::whereIn('game_id', $games_id)
@@ -238,7 +238,8 @@ public function solveData(Request $request)
                                   ->where('student_id', auth()->user()->id)
                                   ->sum('stars');
 
-        $lstars = ceil($max_games / $count_games);
+        $lstars = round($max_games / $count_games);
+        // dd($lstars,$max_games,$count_games);
         $lesson->stars = $lstars;
         $lesson->update();
     }

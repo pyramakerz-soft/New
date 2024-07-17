@@ -815,20 +815,29 @@ class StudentController extends Controller
     public function finishAssignment(Request $request)
     {
         $progress = new StudentProgress();
+        $s_test = StudentTest::find($request->assignment_id);
+
         $progress->student_id = auth()->user()->id;
         $progress->program_id = Test::find($request->test_id)->program_id;
         $progress->unit_id = Lesson::find(Test::find($request->test_id)->lesson_id)->unit_id;
         $progress->program_id = Test::find($request->test_id)->program_id;
         $progress->lesson_id = Test::find($request->test_id)->lesson_id;
         $progress->is_done = 1;
-        if ($request->stars == 0)
-            $progress->score = 10;
-        elseif ($request->stars == 1)
-            $progress->score = 30;
-        elseif ($request->stars == 2)
-            $progress->score = 60;
-        elseif ($request->stars == 3)
-            $progress->score = 100;
+
+        $s_test->status = 1;
+        if($request->stars == 0){
+        $progress->score = 10;
+            $progress->is_done = 0 ;
+            $s_test->status = 0;
+            $s_test->mistake_count = $s_test->mistake_count + 1;
+        }
+        elseif($request->stars == 1)
+        $progress->score = 30;
+        elseif($request->stars == 2)
+        $progress->score = 60;
+        elseif($request->stars == 3)
+        $progress->score = 100;
+
 
         $progress->time = 10;
 
@@ -837,9 +846,14 @@ class StudentController extends Controller
         $progress->test_id = $request->test_id;
         $progress->stars = $request->stars;
         $progress->save();
+
         $s_test = StudentTest::find($request->assignment_id);
         $s_test->status = 1;
         $s_test->update();
+
+
+$s_test->update();
+
 
         return $this->returnData('data', $progress, 'Progress Saved!');
     }
