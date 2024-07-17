@@ -12,9 +12,13 @@ return new class extends Migration {
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable();
+            $table->string('assignment_name')->nullable();
+            $table->string('course_name')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->foreignId('test_id')->nullable()->constrained('tests')->onDelete('cascade');
             $table->dateTime('start_date')->nullable();
-            $table->boolean('is_read')->nullable();
+            $table->dateTime('due_date')->nullable();
+            $table->boolean('is_read')->default(0);
             $table->timestamps();
         });
     }

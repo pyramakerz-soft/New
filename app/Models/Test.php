@@ -50,6 +50,7 @@ class Test extends Model
     //     return $this->belongsTo(TestType::class);
     // }
 
+
     public function getImageAttribute($val)
     {
         return ($val !== null) ? asset('storage/' . $val) : "";

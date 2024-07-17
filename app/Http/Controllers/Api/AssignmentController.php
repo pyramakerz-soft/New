@@ -8,6 +8,7 @@ use App\Models\Game;
 use App\Models\Group;
 use App\Models\GroupStudent;
 use App\Models\Lesson;
+use App\Models\Notification;
 use App\Models\StudentTest;
 use App\Models\Test;
 use App\Models\TestQuestion;
@@ -37,8 +38,15 @@ class AssignmentController extends Controller
         if ($lesson) {
             $unit = $lesson->unit;
             if ($unit) {
-                $program_id = $unit->program_id;
-                $stage_id = $unit->stage_id;
+                $program = $unit->program;
+                // $program_id = $unit->program_id;
+                // $stage_id = $unit->stage_id;
+                if ($program) {
+                    $program_id = $program->id;
+                    $stage_id = $unit->stage_id;
+                    $course_name = $program->course->name ?? null;
+                }
+
             }
         }
 
@@ -80,7 +88,18 @@ class AssignmentController extends Controller
                 'due_date' => Carbon::createFromFormat('d/m/Y', $request->due_date)->format('Y-m-d'),
                 'status' => 0,
             ]);
+            Notification::create([
+                'assignment_name' => $request->name,
+                'course_name' => $course_name,
+                'user_id' => $student_id,
+                'test_id' => $test->id,
+                'start_date' => Carbon::createFromFormat('d/m/Y', $request->start_date)->format('Y-m-d'),
+                'due_date' => Carbon::createFromFormat('d/m/Y', $request->due_date)->format('Y-m-d'),
+                'is_read' => 0,
+            ]);
         }
+
+
 
         foreach ($request->group_id ?? [] as $group_id) {
             $students_in_group = GroupStudent::where('group_id', $group_id)->get();
@@ -98,9 +117,19 @@ class AssignmentController extends Controller
                         'due_date' => Carbon::createFromFormat('d/m/Y', $request->due_date)->format('Y-m-d'),
                         'status' => 0,
                     ]);
+                    Notification::create([
+                        'assignment_name' => $request->name,
+                        'course_name' => $course_name,
+                        'user_id' => $student->student_id,
+                        'test_id' => $test->id,
+                        'start_date' => Carbon::createFromFormat('d/m/Y', $request->start_date)->format('Y-m-d'),
+                        'due_date' => Carbon::createFromFormat('d/m/Y', $request->due_date)->format('Y-m-d'),
+                        'is_read' => 0,
+                    ]);
                 }
             }
         }
         return response()->json(['message' => 'Test assigned successfully'], 201);
     }
+
 }
