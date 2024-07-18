@@ -25,11 +25,13 @@ class GameImagesRelationManager extends RelationManager
             ->schema([
                 Forms\Components\FileUpload::make('image')
                     ->nullable()
+
                     ->preserveFilenames()
 
                     ->disk('public')
                     ->directory('img')
                 ,
+
                 Forms\Components\Select::make('game_letter_id')->label('Choose Letter')
                     ->options(static function (\Livewire\Component $livewire) {
                         // RevisionQuestionsBank::where('bank_id','=',$get('bank_id'))->get()

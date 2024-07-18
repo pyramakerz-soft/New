@@ -59,6 +59,7 @@ class LessonResource extends JsonResource
                     'is_edited' => $game->is_edited,
                     'game_types' => $game->gameTypes,
                     'is_active' => $game->is_active,
+                    'number' => $game->number,
                 ];
             }
             

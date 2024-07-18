@@ -12,6 +12,7 @@ class GameImage extends Model
     public function getImageAttribute($val)
     {
         return ($val !== null) ? asset('storage/img/' . basename($val)) : "";
+
     }
 
     protected $guarded = [];

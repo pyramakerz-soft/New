@@ -552,7 +552,7 @@ class StudentController extends Controller
 
         // Initialize query builder with student ID and program ID
         $progressQuery = StudentProgress::where('student_id', $studentId)
-            ->where('program_id', $request->program_id);
+            ->where('program_id', $request->program_id)->where('is_done',1);
 
         // Filter by month of created_at date if provided
         if ($request->filled('month')) {
@@ -672,11 +672,11 @@ class StudentController extends Controller
             $division = 1;
         if (!$request->filled('from_date') && !$request->filled('to_date'))
             $data['reports_percentages'] = [
-                'three_star' => ((StudentProgress::where('stars', 3)->where('student_id', $studentId)
+                'three_star' => round((StudentProgress::where('stars', 3)->where('student_id', $studentId)
                     ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-                'two_star' => ((StudentProgress::where('stars', 2)->where('student_id', $studentId)
+                'two_star' => round((StudentProgress::where('stars', 2)->where('student_id', $studentId)
                     ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-                'one_star' => ((StudentProgress::where('stars', 1)->where('student_id', $studentId)
+                'one_star' => round((StudentProgress::where('stars', 1)->where('student_id', $studentId)
                     ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
 
             ];
@@ -697,9 +697,9 @@ class StudentController extends Controller
                 $division = 1;
             }
             $data['reports_percentages'] = [
-                'three_star' => (($threestars / $division) * 100),
-                'two_star' => (($twostars / $division) * 100),
-                'one_star' => (($onestar / $division) * 100),
+                'three_star' => round(($threestars / $division) * 100),
+                'two_star' => round(($twostars / $division) * 100),
+                'one_star' => round(($onestar / $division) * 100),
 
             ];
         }
@@ -813,48 +813,76 @@ class StudentController extends Controller
      * )
      */
     public function finishAssignment(Request $request)
-    {
-        $progress = new StudentProgress();
-        $s_test = StudentTest::find($request->assignment_id);
+{
+    $student_id = auth()->user()->id;
+    $test_id = $request->test_id;
+    $assignment_id = $request->assignment_id;
+    $stars = $request->stars;
+$s_test = StudentTest::find($assignment_id);
+    // Retrieve related data
+    $test = Test::find($test_id);
+    $lesson = Lesson::find($test->lesson_id);
+    $program_id = $test->program_id;
+    $unit_id = $lesson->unit_id;
 
-        $progress->student_id = auth()->user()->id;
-        $progress->program_id = Test::find($request->test_id)->program_id;
-        $progress->unit_id = Lesson::find(Test::find($request->test_id)->lesson_id)->unit_id;
-        $progress->program_id = Test::find($request->test_id)->program_id;
-        $progress->lesson_id = Test::find($request->test_id)->lesson_id;
-        $progress->is_done = 1;
+    // Check if the progress record exists
+    $progress = StudentProgress::where('student_id', $student_id)
+        ->where('test_id', $test_id)
+        ->where('program_id', $program_id)
+        ->where('unit_id', $unit_id)
+        ->where('lesson_id', $lesson->id)
+        ->first();
 
-        $s_test->status = 1;
-        if($request->stars == 0){
-        $progress->score = 10;
-            $progress->is_done = 0 ;
+    if ($progress) {
+        // If the progress record exists, update the mistake_count and other fields
+        if ($stars == 0) {
+            $progress->score = 10;
+            $progress->is_done = 0;
+            $progress->mistake_count += 1;
             $s_test->status = 0;
-            $s_test->mistake_count = $s_test->mistake_count + 1;
+        } elseif ($stars == 1) {
+            $progress->score = 30;
+        } elseif ($stars == 2) {
+            $progress->score = 60;
+        } elseif ($stars == 3) {
+            $progress->score = 100;
         }
-        elseif($request->stars == 1)
-        $progress->score = 30;
-        elseif($request->stars == 2)
-        $progress->score = 60;
-        elseif($request->stars == 3)
-        $progress->score = 100;
+    } else {
+        // If the progress record does not exist, create a new one
+        $progress = new StudentProgress();
+        $progress->student_id = $student_id;
+        $progress->program_id = $program_id;
+        $progress->unit_id = $unit_id;
+        $progress->lesson_id = $lesson->id;
+        $progress->test_id = $test_id;
+        $progress->mistake_count = 0;
 
-
-        $progress->time = 10;
-
-        $progress->is_correct = 1;
-        $progress->mistake_count = $request->mistake_count;
-        $progress->test_id = $request->test_id;
-        $progress->stars = $request->stars;
-        $progress->save();
-
-        $s_test = StudentTest::find($request->assignment_id);
-        $s_test->status = 1;
-        $s_test->update();
-
-
-$s_test->update();
-
-
-        return $this->returnData('data', $progress, 'Progress Saved!');
+        if ($stars == 0) {
+            $progress->score = 10;
+            $progress->is_done = 0;
+            $progress->mistake_count = 1;
+            $s_test->status = 0;
+        } elseif ($stars == 1) {
+            $progress->score = 30;
+        } elseif ($stars == 2) {
+            $progress->score = 60;
+        } elseif ($stars == 3) {
+            $progress->score = 100;
+        }
     }
+
+    $progress->time = 10;
+    $progress->is_correct = 1;
+    $progress->stars = $stars;
+    $progress->is_done = ($stars != 0) ? 1 : 0;
+    $progress->save();
+
+    // Update the assignment status
+    
+    $s_test->status = 1;
+    $s_test->update();
+
+    return $this->returnData('data', $progress, 'Progress Saved!');
+}
+
 }

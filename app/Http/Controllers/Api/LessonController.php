@@ -42,7 +42,9 @@ class LessonController extends Controller
     {
         // $units = Unit::all();
         $data['lessons'] = Lesson::with(['game', 'game.gameTypes'])->where("unit_id", $id)->orderBy('number')->get();
+
         $data['lessons']->each(function ($lesson) {
+
             $lesson->game = $lesson->game->sortBy('number');
         });
         $resource = LessonResource::make($data['lessons']);

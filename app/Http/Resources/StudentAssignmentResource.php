@@ -50,7 +50,6 @@ class StudentAssignmentResource extends JsonResource
             
             // foreach ($data as $course) {
                 
-                
                 // Access the test and due_date from the $course object
                 if (isset($course->tests)) {
                     $studentName = User::find($course->student_id)->name ?? '-';
@@ -66,6 +65,7 @@ class StudentAssignmentResource extends JsonResource
                     $programId = $course->program_id;
                     $createdAt = $course->created_at;
                     $completedAt = $course->completed_at;
+                    $updatedAt = $course->updated_at;
                      $daysDifference = null;
                 if ($status !== 1 && $dueDate < Carbon::now()->format('Y-m-d')) {
                     if(!$dueDate)
@@ -157,6 +157,7 @@ class StudentAssignmentResource extends JsonResource
 
                         
                         'created_at' => $createdAt,
+                        'updated_at' => $updatedAt,
                         
                     ]);
                 // }

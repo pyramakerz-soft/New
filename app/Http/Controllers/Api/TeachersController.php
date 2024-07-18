@@ -447,8 +447,8 @@ class TeachersController extends Controller
 
         // Filter by from and to date if provided
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-            $fromDate = $request->from_date;
-            $toDate = $request->to_date;
+            $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
             $query->whereBetween('due_date', [$fromDate, $toDate]);
         }
 
@@ -519,9 +519,9 @@ class TeachersController extends Controller
             'pending' => $pendingCount,
         ];
         $data['assignments_percentages'] = [
-            'completed' => ceil($finishedPercentage),
-            'overdue' => floor($overduePercentage),
-            'pending' => ceil($pendingPercentage),
+            'completed' => round ($finishedPercentage),
+            'overdue' => round($overduePercentage),
+            'pending' => round($pendingPercentage),
         ];
         $data['tests'] = StudentAssignmentResource::make($tests);
         $data['test_types'] = TestResource::make($test_types);
@@ -572,8 +572,9 @@ public function masteryReport(Request $request)
     }
 
     if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-        $fromDate = $request->from_date;
-        $toDate = $request->to_date;
+        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
+            
         $query->whereBetween('created_at', [$fromDate, $toDate]);
     }
     $student_progress = $query->get();
@@ -663,8 +664,8 @@ public function masteryReport(Request $request)
         }
 
         // Group by skill
-        if ($gameType && $gameType->skills) {
-            foreach ($gameType->skills as $gameSkill) {
+        if ($gameType && $gameType->skills->unique()) {
+            foreach ($gameType->skills->unique('skill') as $gameSkill) {
                 $skill = $gameSkill->skill;
 
                 if (!isset($skillsMastery[$skill->id])) {
@@ -826,16 +827,16 @@ public function masteryReport(Request $request)
     $response = [];
     if ($request->has('filter')) {
         switch ($request->filter) {
-            case 'skill':
+            case 'Skill':
                 $response = array_values($skillsMastery);
                 break;
-            case 'unit':
+            case 'Unit':
                 $response = array_values($unitsMastery);
                 break;
-            case 'lesson':
+            case 'Lesson':
                 $response = array_values($lessonsMastery);
                 break;
-            case 'game':
+            case 'Game':
                 $response = array_values($gameTypesMastery);
                 break;
             default:
@@ -889,8 +890,8 @@ public function masteryReport(Request $request)
         ->where('program_id', $request->program_id);
 
     if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-        $from_date = date('Y-m-d', strtotime($request->from_date));
-        $to_date = date('Y-m-d', strtotime($request->to_date));
+        $from_date = Carbon::parse($request->from_date)->startOfDay();
+            $to_date = Carbon::parse($request->to_date)->endOfDay();
         $progressQuery->whereBetween('created_at', [$from_date, $to_date]);
     }
 
@@ -1002,11 +1003,11 @@ public function masteryReport(Request $request)
 
     if (!$request->filled('from_date') && !$request->filled('to_date')) {
         $data['reports_percentages'] = [
-            'first_trial' => ((StudentProgress::where('mistake_count', 0)->where('student_id', $studentId)
+            'first_trial' => round((StudentProgress::where('mistake_count', 0)->where('student_id', $studentId)
                 ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-            'second_trial' => ((StudentProgress::where('mistake_count', 1)->where('student_id', $studentId)
+            'second_trial' => round((StudentProgress::where('mistake_count', 1)->where('student_id', $studentId)
                 ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-            'third_trial' => ((StudentProgress::where('mistake_count', 2)->where('student_id', $studentId)
+            'third_trial' => round((StudentProgress::whereIn('mistake_count', [2,3,4,5,6,7,8,9,10,11])->where('student_id', $studentId)
                 ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
         ];
     } else {
@@ -1014,7 +1015,7 @@ public function masteryReport(Request $request)
             ->where('program_id', $request->program_id)->count();
         $twostars = StudentProgress::where('mistake_count', 1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
             ->where('program_id', $request->program_id)->count();
-        $onestar = StudentProgress::where('mistake_count', 2)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+        $onestar = StudentProgress::whereIn('mistake_count', [2,3,4,5,6,7,8,9,10,11])->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
             ->where('program_id', $request->program_id)->count();
 
         $division = StudentProgress::where('student_id', $studentId)
@@ -1041,8 +1042,8 @@ public function masteryReport(Request $request)
 {
     $studentId = $request->student_id;
     $programId = $request->program_id;
-    $fromDate = date('Y-m-d', strtotime($request->from_date));
-    $toDate = date('Y-m-d', strtotime($request->to_date));
+    $fromDate = Carbon::createFromFormat('Y-m-d', $request->from_date)->format('Y-m-d')->startOfDay();
+            $toDate = Carbon::createFromFormat('Y-m-d', $request->to_date)->format('Y-m-d')->endOfDay();
 
     // Retrieve student progress within the date range
     $studentProgress = StudentProgress::where('student_id', $studentId)
@@ -1052,8 +1053,8 @@ public function masteryReport(Request $request)
         ->get();
 
     if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-        $fromDate = date('Y-m-d', strtotime($request->from_date));
-        $toDate = date('Y-m-d', strtotime($request->to_date));
+        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
         $studentProgress->whereBetween('created_at', [$fromDate, $toDate]);
     }
     if ($studentProgress->isEmpty()) {
@@ -1179,8 +1180,10 @@ $skillsData[$skillName]['average_score'] = $averageScore;
 
         // Filter by from and to date if provided
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-            $fromDate = Carbon::createFromFormat('d/m/Y', $request->from_date)->format('Y-m-d');
-            $toDate = Carbon::createFromFormat('d/m/Y', $request->to_date)->format('Y-m-d');
+            $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
+            // $from_date = Carbon::parse($request->from_date)->startOfDay();
+            // $to_date = Carbon::parse($request->to_date)->endOfDay();
             $progressQuery->whereBetween('due_date', [$fromDate, $toDate]);
         }
 
@@ -1276,7 +1279,9 @@ $skillsData[$skillName]['average_score'] = $averageScore;
     }
 
 
-   public function classMasteryReport(Request $request)
+
+
+public function classMasteryReport(Request $request)
 {
     // Retrieve all students in the specified group
     $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
@@ -1309,7 +1314,7 @@ $skillsData[$skillName]['average_score'] = $averageScore;
 
     if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
         $fromDate = Carbon::parse($request->from_date)->startOfDay();
-        $toDate = Carbon::parse($request->to_date)->endOfDay();
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
         $query->whereBetween('created_at', [$fromDate, $toDate]);
     }
 
@@ -1321,10 +1326,15 @@ $skillsData[$skillName]['average_score'] = $averageScore;
     $gamesMastery = [];
     $skillsMastery = [];
 
+
+if ($student_progress->isEmpty()) {
+            return $this->returnData('data', [], 'No progress found for the given group.');
+        }
     // Process each progress record
     foreach ($student_progress as $progress) {
         // Retrieve the test and its related game, game type, and skills
         $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
+
         // Check if the test and its relationships are properly loaded
         if (!$test || !$test->game || !$test->game->gameTypes) {
             continue; // Skip to the next progress record if any of these are null
@@ -1337,10 +1347,15 @@ $skillsData[$skillName]['average_score'] = $averageScore;
         if (!isset($unitsMastery[$progress->unit_id])) {
             $unitsMastery[$progress->unit_id] = [
                 'unit_id' => $progress->unit_id,
+                'name' => Unit::find($progress->unit_id)->name,
+                'failed' => 0,
                 'introduced' => 0,
                 'practiced' => 0,
                 'mastered' => 0,
                 'total_attempts' => 0,
+                'total_score' => 0,
+                'mastery_percentage' => 0,
+                'lessons' => [],
             ];
         }
 
@@ -1348,140 +1363,244 @@ $skillsData[$skillName]['average_score'] = $averageScore;
         if (!isset($lessonsMastery[$progress->lesson_id])) {
             $lessonsMastery[$progress->lesson_id] = [
                 'lesson_id' => $progress->lesson_id,
+                'name' => Lesson::find($progress->lesson_id)->name,
+                'failed' => 0,
                 'introduced' => 0,
                 'practiced' => 0,
                 'mastered' => 0,
                 'total_attempts' => 0,
+                'total_score' => 0,
+                'mastery_percentage' => 0,
+                'games' => [],
             ];
         }
 
-        // Group by game
-        if (!isset($gamesMastery[$test->game_id])) {
-            $gamesMastery[$test->game_id] = [
+        // Group by game type
+        if (!isset($gameTypesMastery[$gameType->id])) {
+            $gameTypesMastery[$gameType->id] = [
+                'game_type_id' => $gameType->id,
+                'name' => GameType::find($gameType->id)->name,
+                'failed' => 0,
+                'introduced' => 0,
+                'practiced' => 0,
+                'mastered' => 0,
+                'total_attempts' => 0,
+                'count' => 0,
+                'total_score' => 0,
+                'games' => [],
+            ];
+        }
+
+        // Group by game within the game type
+        if (!isset($gameTypesMastery[$gameType->id]['games'][$test->game_id])) {
+            $gameTypesMastery[$gameType->id]['games'][$test->game_id] = [
                 'game_id' => $test->game_id,
+                
+                'name' => Game::find($test->game_id)->name,
+                'failed' => 0,
                 'introduced' => 0,
                 'practiced' => 0,
                 'mastered' => 0,
                 'total_attempts' => 0,
+                'count' => 0,
+                'total_score' => 0,
             ];
         }
 
-        // Check if the game type has related skills
+        // Group by skill
         if ($gameType && $gameType->skills) {
-            foreach ($gameType->skills as $gameSkill) {
+            foreach ($gameType->skills->unique('skill') as $gameSkill) {
                 $skill = $gameSkill->skill;
 
-                // Group by skill
                 if (!isset($skillsMastery[$skill->id])) {
                     $skillsMastery[$skill->id] = [
                         'skill_id' => $skill->id,
                         'name' => $skill->skill,
+                        'failed' => 0,
                         'introduced' => 0,
                         'practiced' => 0,
                         'mastered' => 0,
                         'total_attempts' => 0,
+                        'total_score' => 0,
+                        'mastery_percentage' => 0,
                     ];
                 }
 
-                // Update the skill data
                 $skillsMastery[$skill->id]['total_attempts']++;
                 if ($progress->is_done) {
                     if ($progress->score >= 80) {
                         $skillsMastery[$skill->id]['mastered']++;
-                        $unitsMastery[$progress->unit_id]['mastered']++;
-                        $lessonsMastery[$progress->lesson_id]['mastered']++;
-                        $gamesMastery[$test->game_id]['mastered']++;
-                    } elseif ($progress->score >= 30) {
+                    } elseif ($progress->score >= 60) {
                         $skillsMastery[$skill->id]['practiced']++;
-                        $unitsMastery[$progress->unit_id]['practiced']++;
-                        $lessonsMastery[$progress->lesson_id]['practiced']++;
-                        $gamesMastery[$test->game_id]['practiced']++;
-                    } else {
+                    } elseif ($progress->score >= 30) {
                         $skillsMastery[$skill->id]['introduced']++;
-                        $unitsMastery[$progress->unit_id]['introduced']++;
-                        $lessonsMastery[$progress->lesson_id]['introduced']++;
-                        $gamesMastery[$test->game_id]['introduced']++;
+                    } else {
+                        $skillsMastery[$skill->id]['failed']++;
                     }
+                } else {
+                    $skillsMastery[$skill->id]['failed']++;
                 }
+                $skillsMastery[$skill->id]['total_score'] += $progress->score;
             }
         }
 
-        // Update totals for units, lessons, and games
+        // Update totals for units, lessons, and game types
         $unitsMastery[$progress->unit_id]['total_attempts']++;
         $lessonsMastery[$progress->lesson_id]['total_attempts']++;
-        $gamesMastery[$test->game_id]['total_attempts']++;
-    }
+        $gameTypesMastery[$gameType->id]['total_attempts']++;
+        $gameTypesMastery[$gameType->id]['games'][$test->game_id]['total_attempts']++;
 
-    // Determine the current level for each skill
-    foreach ($skillsMastery as &$skillData) {
-        $introduced = $skillData['introduced'];
-        $practiced = $skillData['practiced'];
-        $mastered = $skillData['mastered'];
-        $total = $skillData['total_attempts'];
-
-        if ($mastered > $practiced && $mastered > $introduced) {
-            $skillData['current_level'] = 'Mastered';
-        } elseif ($practiced > $introduced) {
-            $skillData['current_level'] = 'Practiced';
-        } else {
-            $skillData['current_level'] = 'Introduced';
-        }
-
-        // Calculate mastery percentage
-        $skillData['mastery_percentage'] = $total > 0 ? min(($mastered / $total) * 100, 100) : 0;
-    }
-
-    // Determine the current level for each unit, lesson, and game
-    $determineLevel = function (&$data) {
-        foreach ($data as &$item) {
-            $introduced = $item['introduced'];
-            $practiced = $item['practiced'];
-            $mastered = $item['mastered'];
-            $total = $item['total_attempts'];
-
-            if ($mastered > $practiced && $mastered > $introduced) {
-                $item['current_level'] = 'Mastered';
-            } elseif ($practiced > $introduced) {
-                $item['current_level'] = 'Practiced';
+        if ($progress->is_done) {
+            if ($progress->score >= 80) {
+                $unitsMastery[$progress->unit_id]['mastered']++;
+                $lessonsMastery[$progress->lesson_id]['mastered']++;
+                $gameTypesMastery[$gameType->id]['mastered']++;
+                $gameTypesMastery[$gameType->id]['games'][$test->game_id]['mastered']++;
+            } elseif ($progress->score >= 60) {
+                $unitsMastery[$progress->unit_id]['practiced']++;
+                $lessonsMastery[$progress->lesson_id]['practiced']++;
+                $gameTypesMastery[$gameType->id]['practiced']++;
+                $gameTypesMastery[$gameType->id]['games'][$test->game_id]['practiced']++;
+            } elseif ($progress->score >= 30) {
+                $unitsMastery[$progress->unit_id]['introduced']++;
+                $lessonsMastery[$progress->lesson_id]['introduced']++;
+                $gameTypesMastery[$gameType->id]['introduced']++;
+                $gameTypesMastery[$gameType->id]['games'][$test->game_id]['introduced']++;
             } else {
-                $item['current_level'] = 'Introduced';
+                $unitsMastery[$progress->unit_id]['failed']++;
+                $lessonsMastery[$progress->lesson_id]['failed']++;
+                $gameTypesMastery[$gameType->id]['failed']++;
+                $gameTypesMastery[$gameType->id]['games'][$test->game_id]['failed']++;
             }
-
-            // Calculate mastery percentage
-            $item['mastery_percentage'] = $total > 0 ? min(($mastered / $total) * 100, 100) : 0;
+        } else {
+            $unitsMastery[$progress->unit_id]['failed']++;
+            $lessonsMastery[$progress->lesson_id]['failed']++;
+            $gameTypesMastery[$gameType->id]['failed']++;
+            $gameTypesMastery[$gameType->id]['games'][$test->game_id]['failed']++;
         }
-    };
 
-    $determineLevel($unitsMastery);
-    $determineLevel($lessonsMastery);
-    $determineLevel($gamesMastery);
+        $unitsMastery[$progress->unit_id]['total_score'] += $progress->score;
+        $lessonsMastery[$progress->lesson_id]['total_score'] += $progress->score;
+        $gameTypesMastery[$gameType->id]['total_score'] += $progress->score;
+        $gameTypesMastery[$gameType->id]['games'][$test->game_id]['total_score'] += $progress->score;
+        $gameTypesMastery[$gameType->id]['games'][$test->game_id]['count']++;
 
-    // Filter the data based on the requested filter type
-    $responseData = [];
+        // Group lessons under units
+        if (!isset($unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id])) {
+            $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id] = [
+                'lesson_id' => $progress->lesson_id,
+                'failed' => 0,
+                'introduced' => 0,
+                'practiced' => 0,
+                'mastered' => 0,
+                'total_attempts' => 0,
+                'total_score' => 0,
+                'mastery_percentage' => 0,
+            ];
+        }
+
+        // Aggregate lesson data under the unit
+        $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['failed'] += $lessonsMastery[$progress->lesson_id]['failed'];
+        $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['introduced'] += $lessonsMastery[$progress->lesson_id]['introduced'];
+        $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['practiced'] += $lessonsMastery[$progress->lesson_id]['practiced'];
+        $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['mastered'] += $lessonsMastery[$progress->lesson_id]['mastered'];
+        $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['total_attempts'] += $lessonsMastery[$progress->lesson_id]['total_attempts'];
+        $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['total_score'] += $lessonsMastery[$progress->lesson_id]['total_score'];
+    }
+// Ensure all lessons are included in units
+foreach ($unitsMastery as &$unit) {
+        foreach ($lessonsMastery as $lessonId => $lessonData) {
+            if (!isset($unit['lessons'][$lessonId])) {
+                $unit['lessons'][$lessonId] = [
+                    'lesson_id' => $lessonId,
+                    'failed' => 0,
+                    'introduced' => 0,
+                    'practiced' => 0,
+                    'mastered' => 0,
+                    'total_attempts' => 0,
+                    'total_score' => 0,
+                    'mastery_percentage' => 0,
+                ];
+            }
+        }
+    }
+
+    // Calculate mastery percentages for units, lessons, games, and game types
+    foreach ($unitsMastery as &$unitData) {
+        $unitData['mastery_percentage'] = $unitData['total_attempts'] > 0 ? ($unitData['total_score'] / $unitData['total_attempts']) : 0;
+
+        foreach ($unitData['lessons'] as &$lessonData) {
+            $lessonData['mastery_percentage'] = $lessonData['total_attempts'] > 0 ? ($lessonData['total_score'] / $lessonData['total_attempts']) : 0;
+        }
+
+        $unitData['lessons'] = array_values($unitData['lessons']); // Convert lessons to array
+    }
+
+    foreach ($lessonsMastery as &$lessonData) {
+        $lessonData['mastery_percentage'] = $lessonData['total_attempts'] > 0 ? ($lessonData['total_score'] / $lessonData['total_attempts']) : 0;
+    }
+
+    foreach ($gameTypesMastery as &$gameTypeData) {
+        foreach ($gameTypeData['games'] as &$gameData) {
+            $gameData['mastery_percentage'] = $gameData['total_attempts'] > 0 ? ($gameData['total_score'] / $gameData['total_attempts']) : 0;
+        }
+        $gameTypeData['games'] = array_values($gameTypeData['games']); // Convert games to array
+
+        $gameTypeData['mastery_percentage'] = $gameTypeData['total_attempts'] > 0 ? ($gameTypeData['total_score'] / $gameTypeData['total_attempts']) : 0;
+    }
+
+    // Calculate skill mastery level based on mastered, practiced, introduced, and failed counts
+    foreach ($skillsMastery as &$skillData) {
+        if ($skillData['mastered'] > $skillData['practiced'] && $skillData['mastered'] > $skillData['introduced'] && $skillData['mastered'] > $skillData['failed']) {
+            $skillData['current_level'] = 'mastered';
+            $skillData['mastery_percentage'] = 100;
+        } elseif ($skillData['practiced'] > $skillData['introduced'] && $skillData['practiced'] > $skillData['failed']) {
+            $skillData['current_level'] = 'practiced';
+            $skillData['mastery_percentage'] = 70;
+        } elseif ($skillData['introduced'] > $skillData['failed']) {
+            $skillData['current_level'] = 'introduced';
+            $skillData['mastery_percentage'] = 30;
+        } else {
+            $skillData['current_level'] = 'failed';
+            $skillData['mastery_percentage'] = 15;
+        }
+    }
+
+    // Prepare the response data
+    $response = [];
     if ($request->has('filter')) {
         switch ($request->filter) {
-            case 'unit':
-                $responseData = array_values($unitsMastery);
+            case 'Skill':
+                $response = array_values($skillsMastery);
                 break;
-            case 'lesson':
-                $responseData = array_values($lessonsMastery);
+            case 'Unit':
+                $response = array_values($unitsMastery);
                 break;
-            case 'game':
-                $responseData = array_values($gamesMastery);
+            case 'Lesson':
+                $response = array_values($lessonsMastery);
                 break;
-            case 'skill':
-                $responseData = array_values($skillsMastery);
+            case 'Game':
+                $response = array_values($gameTypesMastery);
                 break;
             default:
-                $responseData = array_values($skillsMastery); // Default to skills if no valid filter provided
+                $response = [
+                    'skills' => array_values($skillsMastery),
+                    'units' => array_values($unitsMastery),
+                    'lessons' => array_values($lessonsMastery),
+                    'games' => array_values($gameTypesMastery),
+                ];
                 break;
         }
     } else {
-        $responseData = array_values($skillsMastery); // Default to skills if no filter provided
+        $response = [
+            'skills' => array_values($skillsMastery),
+            'units' => array_values($unitsMastery),
+            'lessons' => array_values($lessonsMastery),
+            'games' => array_values($gameTypesMastery),
+        ];
     }
 
-    // Return the mastery report data
-    return $this->returnData('data', $responseData, 'Group Progress');
+     return $this->returnData('data', $response, 'deh api bta3ml 7agat');
 }
 
 
@@ -1499,165 +1618,158 @@ $skillsData[$skillName]['average_score'] = $averageScore;
         // Initialize query builder with student IDs and program ID
         $progressQuery = StudentProgress::whereIn('student_id', $students)
             ->where('program_id', $request->program_id);
-
-        if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-            $from_date = date('Y-m-d', strtotime($request->from_date));
-            $to_date = date('Y-m-d', strtotime($request->to_date));
-            $progressQuery->whereBetween('created_at', [$from_date, $to_date]);
-        }
-
-        // Filter by month of created_at date if provided
-        if ($request->filled('month')) {
-            $month = $request->month;
-            $progressQuery->whereMonth('student_progress.created_at', Carbon::parse($month)->month);
-        }
-
-        // Filter by test_types if provided
-        if ($request->filled('type')) {
-            $type = $request->type;
-            $progressQuery->join('tests', 'student_progress.test_id', '=', 'tests.id')
-                ->where('tests.type', $type);
-        }
-
-        // Filter by stars if provided
-        if ($request->filled('stars')) {
-            $stars = (array) $request->stars;
-            $progressQuery->whereIn('stars', $stars);
-        }
-
-        // Get the progress data
-        $progress = $progressQuery->orderBy('created_at', 'ASC')
-            ->select('student_progress.*')
-            ->get();
-
-        // Initialize monthlyScores and starCounts arrays
-        $monthlyScores = [];
-        $starCounts = [];
-
-
-        foreach ($progress as $course) {
-            $createdDate = Carbon::parse($course->created_at);
-            $monthYear = $createdDate->format('Y-m');
-
-            // Calculate the score for each test
-            $testScore = [
-                'test_name' => $course->test_name,
-                'test_id' => $course->test_id,
-                'score' => $course->score,
-                'star' => $course->stars,
-            ];
-
-            // Add the test score to the respective month
-            if (!isset($monthlyScores[$monthYear])) {
-                $monthlyScores[$monthYear] = [
-                    'month' => $createdDate->format('M'),
-                    'total_score' => 0,
-                    'star' => $course->stars,
-                    'tests' => [],
-                ];
-            }
-
-            $monthlyScores[$monthYear]['tests'][] = $testScore;
-            $monthlyScores[$monthYear]['total_score'] += $course->score;
-
-            // Count stars
-            $star = $course->stars;
-            if (isset($starCounts[$star])) {
-                $starCounts[$star]++;
-            } else {
-                $starCounts[$star] = 1;
-            }
-        }
-
-        $totalDisplayedStars = array_sum($starCounts);
-        $oneStarDisplayedCount = isset($starCounts[1]) ? $starCounts[1] : 0;
-        $twoStarDisplayedCount = isset($starCounts[2]) ? $starCounts[2] : 0;
-        $threeStarDisplayedCount = isset($starCounts[3]) ? $starCounts[3] : 0;
-
-        // Filter progress by stars if provided
-        if ($request->filled('stars')) {
-            $stars = (array) $request->stars;
-            $data['tprogress'] = array_filter($monthlyScores, function ($monthlyScore) use ($stars) {
-                foreach ($monthlyScore['tests'] as $test) {
-                    if (in_array($test['star'], $stars)) {
-                        return true;
-                    }
-                }
-                return false;
-            });
-        } else {
-            $data['tprogress'] = array_values($monthlyScores);
-        }
-
-        $oneStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($oneStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
-        $twoStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($twoStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
-        $threeStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($threeStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
-
-        // Prepare response data
-        $data['progress'] = StudentProgressResource::make($progress);
-
-        if ($request->filled('stars')) {
-            $data['counts'] = StudentProgress::whereIn('student_id', $students)
-                ->where('program_id', $request->program_id)
-                ->whereIn('stars', $request->stars)
-                ->count();
-        } else {
-            $data['counts'] = StudentProgress::whereIn('student_id', $students)
-                ->where('program_id', $request->program_id)
-                ->count();
-        }
-
-        if (!$request->filled(['from_date', 'to_date'])) {
-            $totalAttempts = StudentProgress::whereIn('student_id', $students)
-                ->where('program_id', $request->program_id)
-                ->count();
-            $data['reports_percentages'] = [
-                'first_trial' => (StudentProgress::whereIn('student_id', $students)
-                    ->where('stars', 3)
-                    ->where('program_id', $request->program_id)
-                    ->count() / max($totalAttempts, 1)) * 100,
-                'second_trial' => (StudentProgress::whereIn('student_id', $students)
-                    ->where('stars', 2)
-                    ->where('program_id', $request->program_id)
-                    ->count() / max($totalAttempts, 1)) * 100,
-                'third_trial' => (StudentProgress::whereIn('student_id', $students)
-                    ->where('stars', 1)
-                    ->where('program_id', $request->program_id)
-                    ->count() / max($totalAttempts, 1)) * 100,
-            ];
-        } else {
-            $threestars = StudentProgress::whereIn('student_id', $students)
-                ->where('stars', 3)
-                ->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                ->where('program_id', $request->program_id)
-                ->count();
-            $twostars = StudentProgress::whereIn('student_id', $students)
-                ->where('stars', 2)
-                ->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                ->where('program_id', $request->program_id)
-                ->count();
-            $onestar = StudentProgress::whereIn('student_id', $students)
-                ->where('stars', 1)
-                ->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                ->where('program_id', $request->program_id)
-                ->count();
-
-            $totalAttempts = StudentProgress::whereIn('student_id', $students)
-                ->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                ->count();
-
-            $data['reports_percentages'] = [
-                'first_trial' => ($threestars / max($totalAttempts, 1)) * 100,
-                'second_trial' => ($twostars / max($totalAttempts, 1)) * 100,
-                'third_trial' => ($onestar / max($totalAttempts, 1)) * 100,
-            ];
-        }
-
-        $test_types = TestTypes::all();
-        $data['test_types'] = TestResource::make($test_types);
-
-        return $this->returnData('data', $data, 'Group Progress');
+            
+if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+        $from_date = Carbon::parse($request->from_date)->startOfDay();
+            $to_date = Carbon::parse($request->to_date)->endOfDay();
+        $progressQuery->whereBetween('created_at', [$from_date, $to_date]);
     }
+
+    // Filter by month of created_at date if provided
+    if ($request->filled('month')) {
+        $month = $request->month;
+        $progressQuery->whereMonth('student_progress.created_at', Carbon::parse($month)->month);
+    }
+
+    // Filter by test_types if provided
+    if ($request->filled('type')) {
+        $type = $request->type;
+        $progressQuery->join('tests', 'student_progress.test_id', '=', 'tests.id')
+            ->where('tests.type', $type);
+    }
+
+    // Filter by stars if provided
+    if ($request->filled('stars')) {
+        $stars = (array) $request->stars;
+        if($request->stars == 2)
+        $progressQuery->whereIn('mistake_count', range(2,1000));
+        else
+        $progressQuery->whereIn('mistake_count', $stars);
+    }
+
+    // Get the progress data
+    $progress = $progressQuery->orderBy('created_at', 'ASC')
+        ->select('student_progress.*')
+        ->get();
+
+    // Initialize arrays to hold the data
+    $monthlyScores = [];
+    $starCounts = [];
+
+    foreach ($progress as $course) {
+        $createdDate = Carbon::parse($course->created_at);
+        $monthYear = $createdDate->format('Y-m');
+
+        // Calculate the number of trials
+        $numTrials = $course->mistake_count + 1;
+
+        // Calculate the score for each test
+        $testScore = [
+            'name' => $course->test_name,
+            'test_id' => $course->test_id,
+            'score' => $course->score,
+            'star' => $course->stars,  // Include star in the testScore for filtering
+            'num_trials' => $numTrials
+        ];
+
+        // Add the test score to the respective month
+        if (!isset($monthlyScores[$monthYear])) {
+            $monthlyScores[$monthYear] = [
+                'month' => $createdDate->format('M'),
+                'total_score' => 0,
+                'star' => $course->stars,
+                'tests' => [],
+            ];
+        }
+
+        $monthlyScores[$monthYear]['tests'][] = $testScore;
+        $monthlyScores[$monthYear]['total_score'] += $course->score;
+
+        // Count stars
+        $star = $course->stars;
+        if (isset($starCounts[$star])) {
+            $starCounts[$star]++;
+        } else {
+            $starCounts[$star] = 1;
+        }
+    }
+
+    $totalDisplayedStars = array_sum($starCounts);
+    $oneStarDisplayedCount = isset($starCounts[1]) ? $starCounts[1] : 0;
+    $twoStarDisplayedCount = isset($starCounts[2]) ? $starCounts[2] : 0;
+    $threeStarDisplayedCount = isset($starCounts[3]) ? $starCounts[3] : 0;
+
+    // Filter progress by stars if provided
+    if ($request->filled('stars')) {
+        $stars = (array) $request->stars;
+        $data['tprogress'] = array_filter($monthlyScores, function ($monthlyScore) use ($stars) {
+            foreach ($monthlyScore['tests'] as $test) {
+                if (in_array($test['star'], $stars)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    } else {
+        $data['tprogress'] = array_values($monthlyScores);
+    }
+
+    $oneStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($oneStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+    $twoStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($twoStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+    $threeStarDisplayedPercentage = $totalDisplayedStars > 0 ? round(($threeStarDisplayedCount / $totalDisplayedStars) * 100, 2) : 0;
+
+    // Prepare response data
+    $data['progress'] = StudentProgressResource::make($progress);
+
+    if ($request->filled('stars')) {
+        $data['counts'] = StudentProgress::where('stars', $request->stars)->count();
+    } else {
+        $data['counts'] = StudentProgress::whereIn('student_id', $students)
+            ->where('program_id', $request->program_id)
+            ->count();
+    }
+
+    $division = StudentProgress::whereIn('student_id', $students)->count();
+    if ($division == 0) {
+        $division = 1;
+    }
+
+    if (!$request->filled('from_date') && !$request->filled('to_date')) {
+        $data['reports_percentages'] = [
+            'first_trial' => round((StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)
+                ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+            'second_trial' => round((StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)
+                ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+            'third_trial' => round((StudentProgress::whereIn('mistake_count', [2,3,4,5,6,7,8,9,10,11])->whereIn('student_id', $students)
+                ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+        ];
+    } else {
+        $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            ->where('program_id', $request->program_id)->count();
+        $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            ->where('program_id', $request->program_id)->count();
+        $onestar = StudentProgress::whereIn('mistake_count', [2,3,4,5,6,7,8,9,10,11])->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            ->where('program_id', $request->program_id)->count();
+
+        $division = StudentProgress::whereIn('student_id', $students)
+            ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
+
+        if ($division == 0) {
+            $division = 1;
+        }
+
+        $data['reports_percentages'] = [
+            'first_trial' => round(($threestars / $division) * 100, 1),
+            'second_trial' => round(($twostars / $division) * 100, 1),
+            'third_trial' => round(($onestar / $division) * 100, 1),
+        ];
+    }
+
+    $test_types = TestTypes::all();
+    $data['test_types'] = TestResource::make($test_types);
+
+    return $this->returnData('data', $data, 'Student Progress');
+}
 
 
 
@@ -1681,8 +1793,8 @@ $skillsData[$skillName]['average_score'] = $averageScore;
                 ->where('program_id', $programId);
 
             if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-                $fromDate = date('Y-m-d', strtotime($request->from_date));
-                $toDate = date('Y-m-d', strtotime($request->to_date));
+                $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
                 $studentProgressQuery->whereBetween('created_at', [$fromDate, $toDate]);
             }
 
@@ -1691,88 +1803,84 @@ $skillsData[$skillName]['average_score'] = $averageScore;
                 continue;
             }
 
-            foreach ($studentProgress as $progress) {
-                $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
+            $skillsData = [];
+            
+    foreach ($studentProgress as $progress) {
+        // Eager load the relationships
+        $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
 
-                if ($test && $test->game) {
-                    $game = $test->game;
+        if ($test && $test->game) {
+            $game = $test->game;
 
-                    if ($game->gameTypes && $game->gameTypes->skills) {
-                        if (!$game->gameTypes->skills->isEmpty()) {
-                            foreach ($game->gameTypes->skills as $gameSkill) {
-                                if (!$gameSkill->skill)
-                                    continue;
+            if ($game->gameTypes) {
+                // foreach ($game->gameTypes as $gameType) {
+                    if ($game->gameTypes->skills) {
+                        foreach ($game->gameTypes->skills as $gameSkill) {
+                            if (!$gameSkill->skill) continue;
 
-                                $skill = $gameSkill->skill;
-                                $skillName = $skill->skill; // Assuming the column name is 'skill'
-                                $date = $progress->created_at->format('Y-m-d');
+                            $skill = $gameSkill->skill;
+                            $skillName = $skill->skill; // Assuming the column name is 'skill'
+                            $date = $progress->created_at->format('Y-m-d');
 
-                                $currentLevel = 'Introduced';
-                                if ($progress->score >= 80) {
-                                    $currentLevel = 'Mastered';
-                                } elseif ($progress->score >= 60) {
-                                    $currentLevel = 'Practiced';
-                                }
+                            $currentLevel = 'Introduced';
+                            if ($progress->score >= 80) {
+                                $currentLevel = 'Mastered';
+                            } elseif ($progress->score >= 60) {
+                                $currentLevel = 'Practiced';
+                            }
 
-                                // Use student ID and skill name as the key to aggregate scores
-                                if (!isset($skillsData[$studentId])) {
-                                    $student = User::find($studentId);
-                                    $skillsData[$studentId] = [
-                                        'student_name' => $student->name,
-                                        'skills' => []
-                                    ];
-                                }
+                            // Initialize skill data if not already present
+                            if (!isset($skillsData[$skillName])) {
+                                $skillsData[$skillName] = [
+                                    'skill_name' => $skillName,
+                                    'total_score' => 0,
+                                    'count' => 0, // Initialize count to 0
+                                    'average_score' => 0, // Initialize count to 0
+                                    'current_level' => $currentLevel,
+                                    'date' => $date,
+                                ];
+                            }
 
-                                if (!isset($skillsData[$studentId]['skills'][$skillName])) {
-                                    $skillsData[$studentId]['skills'][$skillName] = [
-                                        'skill_name' => $skillName,
-                                        'total_score' => 0,
-                                        'current_level' => $currentLevel,
-                                        'date' => $date,
-                                    ];
-                                }
+                            // Increment count for each skill attempt
+                            $skillsData[$skillName]['count']++;
 
-                                // Sum the scores for each skill and update current level if needed
-                                $skillsData[$studentId]['skills'][$skillName]['total_score'] += $progress->score;
-                                if ($currentLevel === 'Mastered') {
-                                    $skillsData[$studentId]['skills'][$skillName]['current_level'] = 'Mastered';
-                                } elseif ($currentLevel === 'Practiced' && $skillsData[$studentId]['skills'][$skillName]['current_level'] !== 'Mastered') {
-                                    $skillsData[$studentId]['skills'][$skillName]['current_level'] = 'Practiced';
-                                }
+                            // Sum the scores for each skill and update current level if needed
+                            $skillsData[$skillName]['total_score'] += $progress->score;
+
+                            // Calculate the average score
+                            $averageScore = $skillsData[$skillName]['total_score'] / $skillsData[$skillName]['count'];
+$skillsData[$skillName]['average_score'] = $averageScore;
+                            if ($averageScore >= 80) {
+                                $skillsData[$skillName]['current_level'] = 'Mastered';
+                            } elseif ($averageScore >= 60) {
+                                $skillsData[$skillName]['current_level'] = 'Practiced';
+                            } else {
+                                $skillsData[$skillName]['current_level'] = 'Introduced';
                             }
                         }
                     }
                 }
-            }
+            // }
         }
-
-        if (empty($skillsData)) {
-            return $this->returnData('data', [], 'No skills data found for the given group.');
-        }
-
-        // Convert the associative array to an indexed array for final data
-        $finalData = [];
-        foreach ($skillsData as $studentId => $data) {
-            foreach ($data['skills'] as $skillData) {
-                $finalData[] = [
-                    'student_name' => $data['student_name'],
-                    'skill_name' => $skillData['skill_name'],
-                    'total_score' => $skillData['total_score'],
-                    'current_level' => $skillData['current_level'],
-                    'date' => $skillData['date'],
-                ];
-            }
-        }
-
-        // Generate the Excel file
-        $fileName = 'Group_Skill_Report_' . now()->format('Ymd_His') . '.xlsx';
-        Excel::store(new SkillsExport($finalData), $fileName, 'public');
-
-        // Return the downloadable link
-        $filePath = 'https://ambernoak.co.uk/Fillament/public' . Storage::url($fileName);
-
-        return $this->returnData('data', ['download_link' => $filePath], 'Group Skill Report');
     }
+
+    if (empty($skillsData)) {
+        return $this->returnData('data', [], 'No skills data found for the given student progress.');
+    }
+
+    // Convert the associative array to an indexed array
+    $finalData = array_values($skillsData);
+
+    // Generate the Excel file
+    $fileName = 'Skill_Report_' . now()->format('Ymd_His') . '.xlsx';
+    Excel::store(new SkillsExport($finalData), $fileName, 'public');
+
+    // Return the downloadable link
+    $filePath = 'https://ambernoak.co.uk/Fillament/public' . Storage::url($fileName);
+
+    return $this->returnData('data', ['download_link' => $filePath], 'Skill Report');
+}
+}
 
 
 

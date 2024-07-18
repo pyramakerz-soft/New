@@ -33,6 +33,9 @@ class GameResource extends Resource
                      Forms\Components\Toggle::make('is_active')
                     ->required()
                     ,
+                     Forms\Components\TextInput::make('number')->label('Index of Ordering')
+                     
+                    ->numeric(),
                      Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(150),
@@ -113,6 +116,8 @@ class GameResource extends Resource
                         1 => 'ON',
 
                     ]),
+                
+                    
                      Forms\Components\TextInput::make('inst')->label('Instruction')->required(),
                      
                 Forms\Components\TextInput::make('num_of_letters')->maxLength(1)
@@ -151,12 +156,17 @@ class GameResource extends Resource
                 Tables\Columns\TextColumn::make('lesson.name')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('gameImages.image')
+                ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('gameTypes.name')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('main_letter')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('gameTypes.name')
                     ->sortable(),
+                    
                 // Tables\Columns\TextColumn::make('num_of_letters')
                 //     ->numeric()
                 //     ->sortable(),
@@ -165,8 +175,7 @@ class GameResource extends Resource
                 //     ->sortable(),
                 Tables\Columns\TextColumn::make('inst')->label('Instruction')
                     // ->numeric()
-                    ->sortable()
-                    ->searchable(),
+                    ->sortable(),
                     Tables\Columns\IconColumn::make('audio_flag')
     ->boolean(),
                     Tables\Columns\IconColumn::make('isEdited')
