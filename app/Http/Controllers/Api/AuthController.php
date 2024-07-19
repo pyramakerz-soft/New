@@ -15,6 +15,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
 use App\Models\User;
 use App\Models\StudentTest;
 use App\Models\TeacherProgram;
@@ -28,6 +29,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use DB;
+
 /**
  * @OA\Info(title="Mindbuzz APIs", version="99.9999")
  */
@@ -91,6 +93,10 @@ class AuthController extends Controller
 
         $data['user'] = User::with('school')->where('email', $request->email)->first();
         $data['token'] = $token;
+        $unreadCount = Notification::where('user_id', auth()->user()->id)
+            ->where('is_read', 0)
+            ->count();
+        $data['count'] = $unreadCount;
 
         $studentsDidAss = StudentTest::where('student_id', auth()->user()->id)
             ->where('student_tests.status', 0)
@@ -132,7 +138,7 @@ class AuthController extends Controller
         return $this->returnData('data', $user, 'Parent Pin');
     }
 
-     /**
+    /**
      * @OA\Post(
      *     path="/api/auth/loginTeacher",
      *     summary="Login Teacher",
@@ -163,8 +169,8 @@ class AuthController extends Controller
      *         )
      *     )
      * )
-     */ 
-     public function loginTeacher(Request $request)
+     */
+    public function loginTeacher(Request $request)
     {
         $validate = Validator::make($request->all(), [
             'email' => 'required',
@@ -201,22 +207,22 @@ class AuthController extends Controller
         $data['user'] = User::with(['school'])->where('email', $request->email)->first();
         $loc = asset('storage/');
         // $data['programs'] =  TeacherProgram::with(['program.units.lessons' , 'stage'])->where('teacher_id', $data['user']->id)->get();
-         $data['program_data'] = TeacherProgram::with(['program.units.lessons', 'stage'])
-        ->where('teacher_id', $data['user']->id)
-        
-        ->get()
-        ->map(function($teacherProgram) {
-            $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->stage->name;
-           $teacherProgram->image = $teacherProgram->program->image;
-            
-            return $teacherProgram ;
-        });
+        $data['program_data'] = TeacherProgram::with(['program.units.lessons', 'stage'])
+            ->where('teacher_id', $data['user']->id)
+
+            ->get()
+            ->map(function ($teacherProgram) {
+                $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->stage->name;
+                $teacherProgram->image = $teacherProgram->program->image;
+
+                return $teacherProgram;
+            });
 
         $data['token'] = $token;
 
         return $this->returnData('data', $data, 'User Data to update');
-        
-                // $data['programs'] = TeacherProgram::select()
+
+        // $data['programs'] = TeacherProgram::select()
         //     ->join('programs', 'teacher_programs.program_id', 'programs.id')
         //     ->join('courses', 'programs.course_id', 'courses.id')
         //     ->groupBy('programs.id', 'courses.name', 'image')
@@ -228,8 +234,8 @@ class AuthController extends Controller
         //     ->get()
         //     ->unique('stage.id')
         //     ->values();
-        
-        
+
+
     }
 
     /**
@@ -250,11 +256,15 @@ class AuthController extends Controller
      */
     public function getUserData()
     {
-        $data['user'] = User::with(['school', 'details.stage', 'teacher_programs.program.stage','teacher_programs.program.units.lessons'])->find(auth()->user()->id);
+        $data['user'] = User::with(['school', 'details.stage', 'teacher_programs.program.stage', 'teacher_programs.program.units.lessons'])->find(auth()->user()->id);
         $studentsDidAss = StudentTest::where('student_id', auth()->user()->id)
             ->where('student_tests.status', 0)
             ->orderBy('due_date', 'ASC')
             ->get();
+        $unreadCount = Notification::where('user_id', auth()->user()->id)
+            ->where('is_read', 0)
+            ->count();
+        $data['count'] = $unreadCount;
 
         $data['assignments'] = TeacherAssignmentResource::make($studentsDidAss);
         return $this->returnData('data', $data, 'User Data');
@@ -346,14 +356,14 @@ class AuthController extends Controller
             $code = $this->returnCodeAccordingToInput($validate);
             return $this->returnValidationError($code, $validate);
         }
-        if($request->filled('name'))
-        $user->name = $request->name;
-        if($request->filled('email'))
-        $user->email = $request->email;
-        if($request->filled('phone'))
-        $user->parent_phone = $request->phone;
-        if($request->filled('country_code'))
-        $user->country_code = $request->country_code;
+        if ($request->filled('name'))
+            $user->name = $request->name;
+        if ($request->filled('email'))
+            $user->email = $request->email;
+        if ($request->filled('phone'))
+            $user->parent_phone = $request->phone;
+        if ($request->filled('country_code'))
+            $user->country_code = $request->country_code;
         if ($request->photo) {
             $user->parent_image = $this->upploadImage($request->photo, 'profile_images');
         }

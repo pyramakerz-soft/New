@@ -224,7 +224,12 @@ class StudentController extends Controller
         $request->validate([
             'is_read' => 'required',
         ]);
-        $notifications = Notification::where('user_id', auth()->user()->id)->where('is_read', $request->is_read)->get();
+        $userId = auth()->user()->id;
+        $notifications = Notification::where('user_id', $userId)->where('is_read', $request->is_read)->get();
+
+        $unreadCount = Notification::where('user_id', $userId)
+            ->where('is_read', 0)
+            ->count();
         // Notification::where('user_id', auth()->user()->id)->where('is_read', 0)->update(['is_read' => 1]);
         if ($request->is_read == 0) {
             foreach ($notifications as $notification) {
@@ -234,8 +239,10 @@ class StudentController extends Controller
         }
 
 
-
-        return $this->returnData('data', $notifications, "All notifications for the student");
+        return $this->returnData('data', [
+            'notifications' => $notifications,
+            'count' => $unreadCount,
+        ], "All notifications for the student");
     }
     public function studentProgramsAssign()
     {
@@ -552,7 +559,7 @@ class StudentController extends Controller
 
         // Initialize query builder with student ID and program ID
         $progressQuery = StudentProgress::where('student_id', $studentId)
-            ->where('program_id', $request->program_id)->where('is_done',1);
+            ->where('program_id', $request->program_id)->where('is_done', 1);
 
         // Filter by month of created_at date if provided
         if ($request->filled('month')) {
@@ -813,76 +820,76 @@ class StudentController extends Controller
      * )
      */
     public function finishAssignment(Request $request)
-{
-    $student_id = auth()->user()->id;
-    $test_id = $request->test_id;
-    $assignment_id = $request->assignment_id;
-    $stars = $request->stars;
-$s_test = StudentTest::find($assignment_id);
-    // Retrieve related data
-    $test = Test::find($test_id);
-    $lesson = Lesson::find($test->lesson_id);
-    $program_id = $test->program_id;
-    $unit_id = $lesson->unit_id;
+    {
+        $student_id = auth()->user()->id;
+        $test_id = $request->test_id;
+        $assignment_id = $request->assignment_id;
+        $stars = $request->stars;
+        $s_test = StudentTest::find($assignment_id);
+        // Retrieve related data
+        $test = Test::find($test_id);
+        $lesson = Lesson::find($test->lesson_id);
+        $program_id = $test->program_id;
+        $unit_id = $lesson->unit_id;
 
-    // Check if the progress record exists
-    $progress = StudentProgress::where('student_id', $student_id)
-        ->where('test_id', $test_id)
-        ->where('program_id', $program_id)
-        ->where('unit_id', $unit_id)
-        ->where('lesson_id', $lesson->id)
-        ->first();
+        // Check if the progress record exists
+        $progress = StudentProgress::where('student_id', $student_id)
+            ->where('test_id', $test_id)
+            ->where('program_id', $program_id)
+            ->where('unit_id', $unit_id)
+            ->where('lesson_id', $lesson->id)
+            ->first();
 
-    if ($progress) {
-        // If the progress record exists, update the mistake_count and other fields
-        if ($stars == 0) {
-            $progress->score = 10;
-            $progress->is_done = 0;
-            $progress->mistake_count += 1;
-            $s_test->status = 0;
-        } elseif ($stars == 1) {
-            $progress->score = 30;
-        } elseif ($stars == 2) {
-            $progress->score = 60;
-        } elseif ($stars == 3) {
-            $progress->score = 100;
+        if ($progress) {
+            // If the progress record exists, update the mistake_count and other fields
+            if ($stars == 0) {
+                $progress->score = 10;
+                $progress->is_done = 0;
+                $progress->mistake_count += 1;
+                $s_test->status = 0;
+            } elseif ($stars == 1) {
+                $progress->score = 30;
+            } elseif ($stars == 2) {
+                $progress->score = 60;
+            } elseif ($stars == 3) {
+                $progress->score = 100;
+            }
+        } else {
+            // If the progress record does not exist, create a new one
+            $progress = new StudentProgress();
+            $progress->student_id = $student_id;
+            $progress->program_id = $program_id;
+            $progress->unit_id = $unit_id;
+            $progress->lesson_id = $lesson->id;
+            $progress->test_id = $test_id;
+            $progress->mistake_count = 0;
+
+            if ($stars == 0) {
+                $progress->score = 10;
+                $progress->is_done = 0;
+                $progress->mistake_count = 1;
+                $s_test->status = 0;
+            } elseif ($stars == 1) {
+                $progress->score = 30;
+            } elseif ($stars == 2) {
+                $progress->score = 60;
+            } elseif ($stars == 3) {
+                $progress->score = 100;
+            }
         }
-    } else {
-        // If the progress record does not exist, create a new one
-        $progress = new StudentProgress();
-        $progress->student_id = $student_id;
-        $progress->program_id = $program_id;
-        $progress->unit_id = $unit_id;
-        $progress->lesson_id = $lesson->id;
-        $progress->test_id = $test_id;
-        $progress->mistake_count = 0;
 
-        if ($stars == 0) {
-            $progress->score = 10;
-            $progress->is_done = 0;
-            $progress->mistake_count = 1;
-            $s_test->status = 0;
-        } elseif ($stars == 1) {
-            $progress->score = 30;
-        } elseif ($stars == 2) {
-            $progress->score = 60;
-        } elseif ($stars == 3) {
-            $progress->score = 100;
-        }
+        $progress->time = 10;
+        $progress->is_correct = 1;
+        $progress->stars = $stars;
+        $progress->is_done = ($stars != 0) ? 1 : 0;
+        $progress->save();
+
+        // Update the assignment status
+
+        $s_test->status = 1;
+        $s_test->update();
+
+        return $this->returnData('data', $progress, 'Progress Saved!');
     }
-
-    $progress->time = 10;
-    $progress->is_correct = 1;
-    $progress->stars = $stars;
-    $progress->is_done = ($stars != 0) ? 1 : 0;
-    $progress->save();
-
-    // Update the assignment status
-    
-    $s_test->status = 1;
-    $s_test->update();
-
-    return $this->returnData('data', $progress, 'Progress Saved!');
-}
 
 }
