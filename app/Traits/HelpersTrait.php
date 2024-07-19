@@ -36,7 +36,7 @@ trait HelpersTrait
       'errNum' => $errNum,
       'message' => $msg,
       'data'   => (object)[],
-    ], 404);
+    ], 200);
     // ],404);
 
   }

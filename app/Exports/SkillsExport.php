@@ -23,6 +23,7 @@ class SkillsExport implements FromArray, WithHeadings
     public function headings(): array
     {
         return [
+            'Student Name',
             'Skill Name',
             'Score',
             'Count of Games',

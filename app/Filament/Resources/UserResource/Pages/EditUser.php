@@ -25,6 +25,7 @@ class EditUser extends EditRecord
         $user->school_id = $data['school_id'];
         $user->name = $data['name'];
         $user->email = $data['email'];
+        $user->parent_image = $data['parent_image'];
         if (isset($data['password']) && $data['password'] != null) {
 
             $user->password = $data['password'];

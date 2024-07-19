@@ -93,7 +93,7 @@ class User extends Authenticatable implements JWTSubject
     }
     public function getParentImageAttribute($val)
     {
-        return ($val !== null) ? asset('profile_images/' . $val) : "";
+        return ($val !== null) ? asset('storage/profile_images/'. basename($val)) : "";
     }
     public function canAccessPanel(Panel $panel): bool
     {

@@ -11,6 +11,8 @@ use App\Models\Game;
 use App\Models\Group;
 use App\Models\GroupStudent;
 use App\Models\Notification;
+use App\Models\StudentDegree;
+use App\Models\Unit;
 use App\Models\Program;
 use App\Models\StudentTest;
 use App\Models\Lesson;
@@ -244,6 +246,7 @@ class StudentController extends Controller
             'count' => $unreadCount,
         ], "All notifications for the student");
     }
+    
     public function studentProgramsAssign()
     {
         // Fetch the user and related programs with courses and student tests
@@ -306,19 +309,40 @@ class StudentController extends Controller
      * )
      */
     public function studentsInClass(Request $request)
-    {
-        $students_in_group = GroupStudent::where('group_id', $request->group_id)->get();
-        $data['group'] = Group::find($request->group_id)->name;
-        $arr = array();
-        foreach ($students_in_group as $student) {
-            array_push(
-                $arr,
-                User::where('id', $student->student_id)->first(),
-            );
+{
+    $students_in_group = GroupStudent::where('group_id', $request->group_id)->get();
+    $data['group'] = Group::find($request->group_id)->name;
+    
+    $students = array();
+    foreach ($students_in_group as $student) {
+        // Retrieve user data
+        $user = User::where('id', $student->student_id)->first()->toArray();
+        
+        // Initialize latest as null
+        $latest = null;
+
+        // Retrieve the latest student data
+        $student_degree = StudentDegree::where('student_id', $student->student_id)->orderBy('id', 'desc')->first();
+        if (isset($student_degree->game_id)) {
+            $latest_game = $student_degree->game_id;
+            $latest_lesson_id = Game::find($latest_game)->lesson_id;
+            $latest_lesson = Lesson::find($latest_lesson_id)->name;
+            $latest_unit = Unit::find(Lesson::find($latest_lesson_id)->unit_id)->name;
+            $latest = $latest_unit . " " . $latest_lesson;
         }
-        $data['students'] = $arr;
-        return $this->returnData('data', $data, "All students");
+
+        // Add the latest information to the user data
+        $user['latest'] = $latest;
+        
+        // Push the combined data into the students array
+        array_push($students, $user);
     }
+    
+    $data['students'] = $students;
+    return $this->returnData('data', $data, "All students");
+}
+
+
     /**
      * @OA\Post(
      *     path="/api/student_programs_test",
