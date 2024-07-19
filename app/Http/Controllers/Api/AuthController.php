@@ -96,7 +96,7 @@ class AuthController extends Controller
         $unreadCount = Notification::where('user_id', auth()->user()->id)
             ->where('is_read', 0)
             ->count();
-        $data['count'] = $unreadCount;
+        $data['user']->count = $unreadCount;
 
         $studentsDidAss = StudentTest::where('student_id', auth()->user()->id)
             ->where('student_tests.status', 0)
@@ -264,7 +264,8 @@ class AuthController extends Controller
         $unreadCount = Notification::where('user_id', auth()->user()->id)
             ->where('is_read', 0)
             ->count();
-        $data['count'] = $unreadCount;
+        $data['user']->count = $unreadCount;
+
 
         $data['assignments'] = TeacherAssignmentResource::make($studentsDidAss);
         return $this->returnData('data', $data, 'User Data');
