@@ -645,7 +645,7 @@ $latest_game = StudentDegree::where('student_id',$request->student_id)->orderBy(
         if (!isset($lessonsMastery[$progress->lesson_id])) {
             $lessonsMastery[$progress->lesson_id] = [
                 'lesson_id' => $progress->lesson_id,
-                'name' => Lesson::find($progress->lesson_id)->name,
+                'name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name." | ".Lesson::find($progress->lesson_id)->name,
                 'failed' => 0,
                 'introduced' => 0,
                 'practiced' => 0,
@@ -952,7 +952,10 @@ return $this->returnError('404', 'No student progress found .');
     // Filter by stars if provided
     if ($request->filled('stars')) {
         $stars = (array) $request->stars;
-        $progressQuery->whereIn('stars', $stars);
+        if($request->stars == 2)
+        $progressQuery->whereIn('mistake_count', range(2,1000));
+        else
+        $progressQuery->whereIn('mistake_count', $stars);
     }
 
     // Get the progress data
@@ -1173,8 +1176,11 @@ $skillsData[$skillName]['average_score'] = $averageScore;
     }
 
     // Convert the associative array to an indexed array
-    $finalData = array_values($skillsData);
-
+    // $finalData = array_values($skillsData);
+    $studentName = User::find($request->student_id)->name; // Assuming you have a name field in the Student model
+        foreach ($skillsData as $skillData) {
+            $finalData[] = array_merge(['student_name' => $studentName], $skillData);
+        }
     // Generate the Excel file
     $fileName = 'Skill_Report_' . now()->format('Ymd_His') . '.xlsx';
     Excel::store(new SkillsExport($finalData), $fileName, 'public');
@@ -1414,7 +1420,7 @@ if ($student_progress->isEmpty()) {
         if (!isset($lessonsMastery[$progress->lesson_id])) {
             $lessonsMastery[$progress->lesson_id] = [
                 'lesson_id' => $progress->lesson_id,
-                'name' => Lesson::find($progress->lesson_id)->name,
+                'name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name." | ".Lesson::find($progress->lesson_id)->name,
                 'failed' => 0,
                 'introduced' => 0,
                 'practiced' => 0,
