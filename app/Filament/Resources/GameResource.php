@@ -7,6 +7,7 @@ use App\Filament\Resources\GameResource\RelationManagers;
 use App\Filament\Resources\GameResource\RelationManagers\AssignmentsRelationManager;
 use App\Filament\Resources\GameResource\RelationManagers\GameImagesRelationManager;
 use App\Filament\Resources\GameResource\RelationManagers\GameLettersRelationManager;
+use App\Filament\Resources\GameResource\RelationManagers\GameChoicesRelationManager;
 use App\Models\Game;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -160,11 +161,11 @@ class GameResource extends Resource
                 ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
-                Tables\Columns\TextColumn::make('gameTypes.name')
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('gameTypes.name')
+                //     ->sortable(),
                 Tables\Columns\TextColumn::make('main_letter')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('gameTypes.name')
+                Tables\Columns\TextColumn::make('gameTypes.name')->searchable()
                     ->sortable(),
                     
                 // Tables\Columns\TextColumn::make('num_of_letters')
@@ -209,6 +210,7 @@ class GameResource extends Resource
             GameLettersRelationManager::class,
             GameImagesRelationManager::class,
             AssignmentsRelationManager::class,
+            GameChoicesRelationManager::class,
 
         ];
     }

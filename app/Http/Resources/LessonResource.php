@@ -1,13 +1,10 @@
 <?php
-
 namespace App\Http\Resources;
-
 use App\Models\Unit;
 use App\Models\Lesson;
 use App\Models\GameType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-
 class LessonResource extends JsonResource
 {
     /**
@@ -29,15 +26,13 @@ class LessonResource extends JsonResource
             } else {
                 $type = null;
             }
-
             // Retrieve games and their stars
             $gamesWithStars = [];
             $total_stars =0;
+            // dd($data->game);
             foreach ($data->game as $game) {
                 $stars = 0;
-                
                     $stars = isset($game->studentDegrees[0]->stars) ? (int)$game->studentDegrees[0]->stars : 0;
-                   
                     $total_stars += $stars;
                 $gamesWithStars[] = [
                     'id' => $game->id,
@@ -62,8 +57,7 @@ class LessonResource extends JsonResource
                     'number' => $game->number,
                 ];
             }
-            
-            $lesson_stars = round($total_stars/sizeof($gamesWithStars));
+            $lesson_stars = round($total_stars/((sizeof($gamesWithStars) == 0) ? 1 : sizeof($gamesWithStars)));
             $arr[] = [
                 'id' => $data->id,
                 'name' => $data->name,

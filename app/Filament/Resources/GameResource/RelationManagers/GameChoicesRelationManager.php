@@ -2,47 +2,38 @@
 
 namespace App\Filament\Resources\GameResource\RelationManagers;
 
-use App\Models\GameLetter;
-use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\Set;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class GameLettersRelationManager extends RelationManager
+class GameChoicesRelationManager extends RelationManager
 {
-    protected static string $relationship = 'gameLetters';
+    protected static string $relationship = 'gameChoices';
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('letter')
-                    
+                Forms\Components\TextInput::make('choice')
                     ->required()
-                    ->maxLength(100),
-                Forms\Components\Toggle::make('main_question')
-                    
+                    ->columnSpanFull()
+                    ->maxLength(255),
+                Forms\Components\Toggle::make('is_correct')
                     ->required(),
-                Forms\Components\TextInput::make('sec_letter')
-                    
-                    ->maxLength(100),
-
             ]);
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('letter')
+            ->recordTitleAttribute('choice')
             ->columns([
-                Tables\Columns\TextColumn::make('letter'),
-                Tables\Columns\TextColumn::make('sec_letter'),
-                Tables\Columns\ToggleColumn::make('main_question'),
+                Tables\Columns\TextColumn::make('choice'),
+                Tables\Columns\ToggleColumn::make('is_correct'),
             ])
             ->filters([
                 //

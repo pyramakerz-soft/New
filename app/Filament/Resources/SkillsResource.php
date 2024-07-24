@@ -2,9 +2,10 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\GameTypeResource\Pages;
-use App\Filament\Resources\GameTypeResource\RelationManagers;
-use App\Models\GameType;
+use App\Filament\Resources\SkillsResource\Pages;
+use App\Filament\Resources\SkillsResource\RelationManagers;
+use App\Filament\Resources\SkillsResource\RelationManagers\GameSkillsRelationManager;
+use App\Models\Skills;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,10 +14,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class GameTypeResource extends Resource
+class SkillsResource extends Resource
 {
-    protected static ?string $model = GameType::class;
-    protected static ?string $navigationGroup = 'Games';
+    protected static ?string $model = Skills::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -24,8 +24,7 @@ class GameTypeResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Textarea::make('name')
-                ->unique()
+                Forms\Components\Textarea::make('skill')
                     ->required()
                     ->maxLength(65535)
                     ->columnSpanFull(),
@@ -36,7 +35,8 @@ class GameTypeResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')->searchable(),
+                Tables\Columns\TextColumn::make('skill')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -50,7 +50,6 @@ class GameTypeResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\DeleteAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -63,16 +62,16 @@ class GameTypeResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+           GameSkillsRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListGameTypes::route('/'),
-            'create' => Pages\CreateGameType::route('/create'),
-            'edit' => Pages\EditGameType::route('/{record}/edit'),
+            'index' => Pages\ListSkills::route('/'),
+            'create' => Pages\CreateSkills::route('/create'),
+            'edit' => Pages\EditSkills::route('/{record}/edit'),
         ];
     }
 }
