@@ -614,8 +614,8 @@ $latest_game = StudentDegree::where('student_id',$request->student_id)->orderBy(
     // Process each progress record
     foreach ($student_progress as $progress) {
         // Retrieve the test and its related game, game type, and skills
-        $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
-
+        $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id',$progress->lesson_id)->find($progress->test_id);
+    
         // Check if the test and its relationships are properly loaded
         if (!$test || !$test->game || !$test->game->gameTypes) {
             continue; // Skip to the next progress record if any of these are null
@@ -694,7 +694,7 @@ $latest_game = StudentDegree::where('student_id',$request->student_id)->orderBy(
 
         // Group by skill
         if ($gameType && $gameType->skills->unique()) {
-            foreach ($gameType->skills->unique('skill') as $gameSkill) {
+            foreach ($gameType->skills->where('lesson_id',$progress->lesson_id)->unique('skill') as $gameSkill) {
                 $skill = $gameSkill->skill;
 
                 if (!isset($skillsMastery[$skill->id])) {
@@ -1092,7 +1092,7 @@ return $this->returnError('404', 'No student progress found .');
     $studentProgress = StudentProgress::where('student_id', $studentId)
         ->where('program_id', $programId)
         ->where('is_done', 1)
-        ->whereBetween('created_at', [$fromDate, $toDate])
+        // ->whereBetween('created_at', [$fromDate, $toDate])
         ->get();
 
 if($studentProgress->isEmpty())
@@ -1122,7 +1122,7 @@ $latest_game = StudentDegree::where('student_id',$request->student_id)->orderBy(
             if ($game->gameTypes) {
                 // foreach ($game->gameTypes as $gameType) {
                     if ($game->gameTypes->skills) {
-                        foreach ($game->gameTypes->skills->unique('skill') as $gameSkill) {
+                        foreach ($game->gameTypes->skills->where('lesson_id',$progress->lesson_id)->unique('skill') as $gameSkill) {
                             if (!$gameSkill->skill) continue;
 
                             $skill = $gameSkill->skill;
@@ -1390,7 +1390,7 @@ if ($student_progress->isEmpty()) {
     // Process each progress record
     foreach ($student_progress as $progress) {
         // Retrieve the test and its related game, game type, and skills
-        $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
+        $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id',$progress->lesson_id)->find($progress->test_id);
 
         // Check if the test and its relationships are properly loaded
         if (!$test || !$test->game || !$test->game->gameTypes) {
@@ -1466,7 +1466,7 @@ if ($student_progress->isEmpty()) {
 
         // Group by skill
         if ($gameType && $gameType->skills) {
-            foreach ($gameType->skills->unique('skill') as $gameSkill) {
+            foreach ($gameType->skills->where('lesson_id',$progress->lesson_id)->unique('skill') as $gameSkill) {
                 $skill = $gameSkill->skill;
 
                 if (!isset($skillsMastery[$skill->id])) {
@@ -1610,16 +1610,16 @@ foreach ($unitsMastery as &$unit) {
     foreach ($skillsMastery as &$skillData) {
         if ($skillData['mastered'] > $skillData['practiced'] && $skillData['mastered'] > $skillData['introduced'] && $skillData['mastered'] > $skillData['failed']) {
             $skillData['current_level'] = 'mastered';
-            $skillData['mastery_percentage'] = 100;
+            $skillData['mastery_percentage'] = $skillData['total_score']/$skillData['total_attempts'] > 100 ? 100 : $skillData['total_score']/$skillData['total_attempts'];
         } elseif ($skillData['practiced'] > $skillData['introduced'] && $skillData['practiced'] > $skillData['failed']) {
             $skillData['current_level'] = 'practiced';
-            $skillData['mastery_percentage'] = 70;
+            $skillData['mastery_percentage'] = $skillData['total_score']/$skillData['total_attempts'] > 100 ? 100 : $skillData['total_score']/$skillData['total_attempts'];
         } elseif ($skillData['introduced'] > $skillData['failed']) {
             $skillData['current_level'] = 'introduced';
-            $skillData['mastery_percentage'] = 30;
+            $skillData['mastery_percentage'] = $skillData['total_score']/$skillData['total_attempts'] > 100 ? 100 : $skillData['total_score']/$skillData['total_attempts'];
         } else {
             $skillData['current_level'] = 'failed';
-            $skillData['mastery_percentage'] = 15;
+            $skillData['mastery_percentage'] = $skillData['total_score']/$skillData['total_attempts'] > 100 ? 100 : $skillData['total_score']/$skillData['total_attempts'];
         }
     }
 
@@ -1864,14 +1864,14 @@ public function classSkillReport(Request $request)
 
         foreach ($studentProgress as $progress) {
             // Eager load the relationships
-            $test = Test::with(['game.gameTypes.skills.skill'])->find($progress->test_id);
+            $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id',$progress->lesson_id)->find($progress->test_id);
 
             if ($test && $test->game) {
                 $game = $test->game;
 
                 if ($game->gameTypes) {
                     if ($game->gameTypes->skills) {
-                        foreach ($game->gameTypes->skills->unique('skill') as $gameSkill) {
+                        foreach ($game->gameTypes->skills->where('lesson_id',$progress->lesson_id)->unique('skill') as $gameSkill) {
                             if (!$gameSkill->skill) continue;
 
                             $skill = $gameSkill->skill;

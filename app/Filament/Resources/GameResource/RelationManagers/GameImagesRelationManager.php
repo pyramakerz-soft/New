@@ -33,14 +33,24 @@ class GameImagesRelationManager extends RelationManager
                 ,
 
                 Forms\Components\Select::make('game_letter_id')->label('Choose Letter')
-                    ->options(static function (\Livewire\Component $livewire) {
-                        // RevisionQuestionsBank::where('bank_id','=',$get('bank_id'))->get()
-                        $letters = GameLetter::where('game_id', $livewire->ownerRecord->id)->get();
-                        return $letters->pluck('letter', 'id')->toArray();
+    ->options(static function (\Livewire\Component $livewire) {
+        $letters = GameLetter::where('game_id', $livewire->ownerRecord->id)->get();
 
-                    })->searchable()
-                    ->preload()
-                    ->required(),
+        // Transform the collection to concatenate `letter` and `sec_letter`
+        $letters = $letters->map(function ($item) {
+            if (!empty($item->sec_letter)) {
+                return ['id' => $item->id, 'letter' => $item->letter . ' // ' . $item->sec_letter];
+            }
+            return ['id' => $item->id, 'letter' => $item->letter];
+        });
+
+        // Pluck the transformed collection
+        return $letters->pluck('letter', 'id')->toArray();
+    })
+    ->searchable()
+    ->preload()
+    ->required(),
+
                 Forms\Components\Toggle::make('correct')->required(),
                 Forms\Components\TextInput::make('word')->required(),
                 // Forms\Components\ViewField::make('image_select')
