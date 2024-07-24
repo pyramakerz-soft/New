@@ -25,7 +25,7 @@ class TeacherAssignmentResource extends JsonResource
         $uniqueTeacherIds = [];
         $uniqueDueDate = [];
         foreach ($this->resource as $data) {
- if (in_array($data->test_id, $uniqueTestIds) && in_array($data->lesson_id, $uniqueLessonIds) && in_array($data->teacher_id, $uniqueTeacherIds) && in_array($data->due_date, $uniqueDueDate)) {
+        if (in_array($data->test_id, $uniqueTestIds) && in_array($data->lesson_id, $uniqueLessonIds) && in_array($data->teacher_id, $uniqueTeacherIds) && in_array($data->due_date, $uniqueDueDate)) {
                 // Skip this entry if the test_id is already processed
                 continue;
             }
@@ -44,6 +44,7 @@ class TeacherAssignmentResource extends JsonResource
                     $teacher_id = $data->test_id;
                     $name = $data->tests->name;
                     $due_date = $data->due_date;
+                    $start_date = $data->start_date;
                     $diff = $data->tests->difficulty_level;
                     $image = Test::find($data->test_id)->image;
 
@@ -53,8 +54,8 @@ class TeacherAssignmentResource extends JsonResource
                         'test_id' => $teacher_id,
                         'name' =>$name,
                         'image' => Test::find($data->test_id)->image,
-                        'created_at' => date('Y-n-j',strtotime($due_date)),
-                        'created_at_form' => date('Y-n-j',strtotime($due_date)),
+                        'created_at' => date('Y-n-j',strtotime($start_date)),
+                        'created_at_form' => date('Y-n-j',strtotime($start_date)),
                         'diff_lvl' => $diff,
                         'num_of_students_done' => StudentTest::where('test_id',$data->test_id)->where('due_date',$data->due_date)->where('status',1)->count(),
                         'total_num_of_students' => StudentTest::where('test_id',$data->test_id)->where('due_date',$data->due_date)->count(),

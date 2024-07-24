@@ -207,6 +207,14 @@ class GameController extends Controller
      */
 public function solveData(Request $request)
 {
+    
+    //  $games = Game::where('lesson_id', $lesson_id)
+    //         ->join('lessons', 'lessons.id', 'games.lesson_id')
+    //         ->join('units', 'units.id', 'lessons.unit_id')
+    //         ->join('programs', 'programs.id', 'units.program_id')
+    //         ->where('game_type_id', $game->game_type_id)
+    //         ->select('games.*')
+    //         ->get();
     foreach($request->game_id as $game_id) {
         if(StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->count() > 0) {
             $new = StudentDegree::where('student_id', auth()->user()->id)->where('game_id', $game_id)->first();

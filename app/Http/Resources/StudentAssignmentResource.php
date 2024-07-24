@@ -63,7 +63,7 @@ class StudentAssignmentResource extends JsonResource
                     $lessonNum = Lesson::find($course->lesson_id)->number;
                     $lessonName = Lesson::find($course->lesson_id)->name;
                     $programId = $course->program_id;
-                    $createdAt = $course->created_at;
+                    $createdAt = $course->start_date;
                     $completedAt = $course->completed_at;
                     $updatedAt = $course->updated_at;
                      $daysDifference = null;

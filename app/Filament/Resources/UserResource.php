@@ -32,14 +32,14 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\FileUpload::make('parent_image')
+                    Forms\Components\FileUpload::make('parent_image')
                 ->label("image")
                 ->dehydrated(fn($state) => filled($state))
-                // ->required(fn(string $context): bool => $context == 'create')
+                ->required(fn(string $context): bool => $context == 'create')
                 ->dehydrated(true)
                 ->preserveFilenames()
                 ->rules(['mimes:jpg,jpeg,png', 'max:10000'])
-                ->disk('public')
+                                ->disk('public')
                 ->directory('profile_images')
             ,
                 Forms\Components\Select::make('school_id')
