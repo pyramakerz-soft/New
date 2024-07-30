@@ -1306,9 +1306,9 @@ class TeachersController extends Controller
             'pending' => $pendingCount,
         ];
         $data['assignments_percentages'] = [
-            'completed' => ceil($finishedPercentage),
-            'overdue' => floor($overduePercentage),
-            'pending' => ceil($pendingPercentage),
+            'completed' => round($finishedPercentage),
+            'overdue' => round($overduePercentage),
+            'pending' => round($pendingPercentage),
         ];
         $data['tests'] = StudentAssignmentResource::make($tests);
         $data['test_types'] = TestResource::make($test_types);
