@@ -26,7 +26,7 @@ class Video extends Model
     {
         return ($val !== null) ? asset('storage/' . $val) : "";
     }
-         public function getFilePathAttribute($val)
+    public function getFilePathAttribute($val)
     {
         return ($val !== null) ? asset('storage/' . $val) : null;
     }

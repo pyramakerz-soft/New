@@ -52,7 +52,7 @@ class StudentProgressResource extends JsonResource
             // dd($course);
             $student_name = User::find($course->student_id)->name ?? '-';
             $createdDate = Carbon::parse($course->created_at);
-            $created_at = date('m',strtotime($course->created_at));
+            $created_at = date('d',strtotime($course->created_at));
             $testName = $course->tests->name;
             $testId = $course->test_id;
             $type = $course->tests->type;

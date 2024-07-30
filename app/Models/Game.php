@@ -31,6 +31,10 @@ class Game extends Model
     {
         return $this->hasMany(GameLetter::class, 'game_id');
     }
+    public function gameChoices()
+    {
+        return $this->hasMany(Choice::class, 'game_id');
+    }
     public function gameQuestions()
     {
         return $this->hasMany(TestQuestion::class, 'game_id');
@@ -56,4 +60,5 @@ class Game extends Model
     {
         return ($val !== null) ? asset('storage/' . $val) : "";
     }
+
 }

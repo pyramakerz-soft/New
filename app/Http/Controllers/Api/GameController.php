@@ -112,17 +112,17 @@ class GameController extends Controller
 
         
         if($request->filled('game_id')){
-        $game = Game::with(['gameImages', 'gameLetters', 'gameTypes'])->where('id', $request->game_id)->first();
+        $game = Game::with(['gameImages', 'gameLetters', 'gameTypes','gameChoices'])->where('id', $request->game_id)->first();
         if (!$game) {
             return response()->json(['message' => 'Game not found'], 404);
         }
         }elseif($request->filled('lesson_id') && !$request->filled('game_id')){
-            $game = Game::with(['gameImages', 'gameLetters', 'gameTypes'])->where('lesson_id', $request->lesson_id)->first();
+            $game = Game::with(['gameImages', 'gameLetters', 'gameTypes','gameChoices'])->where('lesson_id', $request->lesson_id)->first();
         }
         $gameTypeName = $game->gameTypes->name;
         $audioFlag = $game->audio_flag;
         // if(auth()->user()->role != 1)
-        $games = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])
+        $games = Game::with(['gameImages', 'gameLetters','gameChoices', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])
             ->whereHas('gameTypes', function ($query) use ($gameTypeName) {
                 $query->where('name', $gameTypeName);
             })->where('lesson_id', $request->lesson_id)->where('audio_flag', $audioFlag)
