@@ -60,4 +60,5 @@ class Game extends Model
     {
         return ($val !== null) ? asset('storage/' . $val) : "";
     }
+
 }

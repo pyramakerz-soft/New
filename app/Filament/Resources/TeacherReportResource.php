@@ -2,8 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\StudentResource\Pages;
-use App\Filament\Resources\StudentResource\RelationManagers;
+use App\Filament\Resources\TeacherReportResource\Pages;
+use App\Filament\Resources\TeacherReportResource\Widgets\CompReportStats;
+use App\Filament\Resources\TeacherResource\RelationManagers;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -15,12 +16,16 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class StudentResource extends Resource
+class TeacherReportResource extends Resource
 {
-    // protected static ?string $model = User::class;
+    // protected static ?string $navigationGroup = 'Report';
     protected static ?string $navigationGroup = 'Report';
+     
+    public static ?string $label = 'Teachers';
+
+
+    // public static $label = 'customer';
     protected static ?string $model = User::class;
-    public static ?string $label = 'Students';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -42,31 +47,26 @@ class StudentResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('stage_id')
-                    ->label('Stage')
-                    ->relationship('details.stage','name')
-                    // ->options(
-                    //     \App\Models\Stage::all()->pluck('name', 'id')->toArray()
-                    // )
-                    ,
-                    
+                ->label('Stage')
+                ->relationship('details.stage','name')
+                // ->options(
+                //     \App\Models\Stage::all()->pluck('name', 'id')->toArray()
+                // )
+                ,
+                
 
-                SelectFilter::make('school_id')
-                    ->label('School')
-                    ->relationship('details.school','name')
-                    // ->options(
-                    //     \App\Models\School::all()->pluck('name', 'id')->toArray()
-                    // )
-                    ,
-                SelectFilter::make('group_id')
-                    ->label('Group')
-                    ->relationship('groups.group','sec_name')
-                    // ->options(
-                    //     \App\Models\School::all()->pluck('name', 'id')->toArray()
-                    // )
-                    ,
+            SelectFilter::make('school_id')
+                ->label('School')
+                ->relationship('details.school','name')
+                // ->options(
+                //     \App\Models\School::all()->pluck('name', 'id')->toArray()
+                // )
+                ,
+         
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -81,13 +81,19 @@ class StudentResource extends Resource
             //
         ];
     }
-
+    public static function getWidgets(): array
+    {
+        return [
+            CompReportStats::class,
+        ];
+    }
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListStudents::route('/'),
-            'create' => Pages\CreateStudent::route('/create'),
-            'edit' => Pages\EditStudent::route('/{record}/edit'),
+            'index' => Pages\ListTeacherReports::route('/'),
+            'create' => Pages\CreateTeacherReport::route('/create'),
+            'edit' => Pages\EditTeacherReport::route('/{record}/edit'),
+            
         ];
     }
 }
