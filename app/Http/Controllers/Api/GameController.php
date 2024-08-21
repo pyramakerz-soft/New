@@ -11,6 +11,7 @@ use App\Models\Lesson;
 use Illuminate\Http\Request;
 use App\Traits\HelpersTrait;
 use App\Http\Resources\GameTypesResource;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
 class GameController extends Controller
@@ -106,18 +107,21 @@ class GameController extends Controller
      */
     public function gamebyId(Request $request)
     {
-        $user_id = Auth::user()->id;
+        
+              $user_id = Auth::user()->id;
+        $user = User::find($user_id);
+        $gender = $user->gender;
         // if(auth()->user()->role != 1)
         $userStage = UserDetails::where('user_id', $user_id)->select('stage_id')->first()->stage_id;
 
-        
-        if($request->filled('game_id')){
-        $game = Game::with(['gameImages', 'gameLetters', 'gameTypes','gameChoices'])->where('id', $request->game_id)->first();
-        if (!$game) {
-            return response()->json(['message' => 'Game not found'], 404);
-        }
-        }elseif($request->filled('lesson_id') && !$request->filled('game_id')){
-            $game = Game::with(['gameImages', 'gameLetters', 'gameTypes','gameChoices'])->where('lesson_id', $request->lesson_id)->first();
+
+        if ($request->filled('game_id')) {
+            $game = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'gameChoices'])->where('id', $request->game_id)->first();
+            if (!$game) {
+                return response()->json(['message' => 'Game not found'], 404);
+            }
+        } elseif ($request->filled('lesson_id') && !$request->filled('game_id')) {
+            $game = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'gameChoices'])->where('lesson_id', $request->lesson_id)->first();
         }
         $gameTypeName = $game->gameTypes->name;
         $audioFlag = $game->audio_flag;
@@ -129,9 +133,29 @@ class GameController extends Controller
             ->join('lessons', 'lessons.id', 'games.lesson_id')
             ->join('units', 'units.id', 'lessons.unit_id')
             ->join('programs', 'programs.id', 'units.program_id')
+            ->join('stages','programs.stage_id','stages.id')
             ->where('programs.stage_id', $userStage)
-            ->select('games.*')
+            ->select('games.*','stages.mob_stage_name as stage_name')
             ->get();
+        //     else
+        // $games = Game::with(['gameImages', 'gameLetters','gameChoices', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])
+        //     ->whereHas('gameTypes', function ($query) use ($gameTypeName) {
+        //         $query->where('name', $gameTypeName);
+        //     })->where('lesson_id', $request->lesson_id)->where('audio_flag', $audioFlag)
+        //         ->join('lessons', 'lessons.id', 'games.lesson_id')
+        //     ->join('units', 'units.id', 'lessons.unit_id')
+        //     ->join('programs', 'programs.id', 'units.program_id')
+        //     ->join('stages','programs.stage_id','stages.id')
+        //     ->where('programs.stage_id', $userStage)
+        //     ->select('games.*','stages.mob_stage_name as stage_name')
+        //     ->select('games.*')
+        //     ->get();
+        if ($gameTypeName == 'Choose_Gender') {
+            foreach ($games as $game) {
+                $game->correct_ans = $gender;
+                $game->save();
+            }
+        }
         //     else
         // $games = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])
         //     ->whereHas('gameTypes', function ($query) use ($gameTypeName) {
@@ -143,10 +167,55 @@ class GameController extends Controller
         //     // ->where('programs.stage_id', $userStage)
         //     ->select('games.*')
         //     ->get();
-            
+
         $data['games'] = $games;
         $data['types'] = GameType::all();
         return $this->returnData('data', $data, "Game");
+        
+        
+        
+        // $user_id = Auth::user()->id;
+        // // if(auth()->user()->role != 1)
+        // $userStage = UserDetails::where('user_id', $user_id)->select('stage_id')->first()->stage_id;
+
+        
+        // if($request->filled('game_id')){
+        // $game = Game::with(['gameImages', 'gameLetters', 'gameTypes','gameChoices'])->where('id', $request->game_id)->first();
+        // if (!$game) {
+        //     return response()->json(['message' => 'Game not found'], 404);
+        // }
+        // }elseif($request->filled('lesson_id') && !$request->filled('game_id')){
+        //     $game = Game::with(['gameImages', 'gameLetters', 'gameTypes','gameChoices'])->where('lesson_id', $request->lesson_id)->first();
+        // }
+        // $gameTypeName = $game->gameTypes->name;
+        // $audioFlag = $game->audio_flag;
+        // // if(auth()->user()->role != 1)
+        // $games = Game::with(['gameImages', 'gameLetters','gameChoices', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])
+        //     ->whereHas('gameTypes', function ($query) use ($gameTypeName) {
+        //         $query->where('name', $gameTypeName);
+        //     })->where('lesson_id', $request->lesson_id)->where('audio_flag', $audioFlag)
+        //     ->join('lessons', 'lessons.id', 'games.lesson_id')
+        //     ->join('units', 'units.id', 'lessons.unit_id')
+        //     ->join('programs', 'programs.id', 'units.program_id')
+        //     ->join('stages','programs.stage_id','stages.id')
+        //     ->where('programs.stage_id', $userStage)
+        //     ->select('games.*','stages.mob_stage_name as stage_name')
+        //     ->get();
+        // //     else
+        // // $games = Game::with(['gameImages', 'gameLetters', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])
+        // //     ->whereHas('gameTypes', function ($query) use ($gameTypeName) {
+        // //         $query->where('name', $gameTypeName);
+        // //     })->where('lesson_id', $request->lesson_id)->where('audio_flag', $audioFlag)
+        // //     ->join('lessons', 'lessons.id', 'games.lesson_id')
+        // //     ->join('units', 'units.id', 'lessons.unit_id')
+        // //     ->join('programs', 'programs.id', 'units.program_id')
+        // //     // ->where('programs.stage_id', $userStage)
+        // //     ->select('games.*')
+        // //     ->get();
+            
+        // $data['games'] = $games;
+        // $data['types'] = GameType::all();
+        // return $this->returnData('data', $data, "Game");
     }
 
     /**

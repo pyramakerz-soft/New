@@ -106,18 +106,36 @@ class StudentController extends Controller
     public function studentAssignmentsGames(Request $request)
     {
         // $studentTest = StudentTest::where('student_id', auth()->user()->id)->select('test_id')->get();
-        $studentsDidAss = StudentTest::where('program_id', $request->program_id)->where('id', $request->test_id)->where('student_id', auth()->user()->id)->where('student_tests.status', 0)->where('student_tests.due_date', '>=', date('Y-m-d', strtotime(now())))->where('student_tests.start_date', '<=', date('Y-m-d', strtotime(now())))->get();
+        $studentsDidAss = StudentTest::where('student_tests.program_id', $request->program_id)
+        ->where('student_tests.id', $request->test_id)
+        ->where('student_id', auth()->user()->id)->where('student_tests.status', 0)
+        ->where('student_tests.due_date', '>=', date('Y-m-d', strtotime(now())))
+        ->where('student_tests.start_date', '<=', date('Y-m-d', strtotime(now())))
+        ->join('tests','student_tests.test_id','tests.id')
+        ->join('programs', 'programs.id', 'student_tests.program_id')
+        ->join('stages','programs.stage_id','stages.id')
+        ->select('student_tests.*','stages.mob_stage_name as stage_name')->get();
         // dd($studentsDidAss);
 
-        $testQuestions = TestQuestion::whereIn('test_id', $studentsDidAss->pluck('test_id'))->with(['game.gameImages', 'game.gameLetters', 'game.gameTypes'])->get();
+        $testQuestions = TestQuestion::whereIn('test_id', $studentsDidAss->pluck('test_id'))->with(['game.gameImages', 'game.gameLetters', 'game.gameTypes','game.gameChoices','game.lesson.unit.program.course'])
+        ->join('tests','test_questions.test_id','tests.id')
+        ->join('programs', 'programs.id', 'tests.program_id')
+        ->join('stages','programs.stage_id','stages.id')
+        ->select('test_questions.*','stages.mob_stage_name as stage_name')
+        ->get();
 
         $arr = [];
         $games = [];
-
+    $i=0;
         foreach ($testQuestions as $question) {
             $arr[] = $question;
             if ($question->game) {
+                
                 $games[] = $question->game;
+                $games[$i]['stage_name'] =  $question->stage_name;
+                // array_push($games,['stage_name' => $question->stage_name]);
+            $i++;
+                
             }
         }
         $studentAssignGames = $games;
@@ -613,7 +631,7 @@ class StudentController extends Controller
 
         // Get the progress data
         $progress = $progressQuery->orderBy('created_at', 'ASC')
-            ->select('student_progress.*')
+            ->select('student_progress.*')->where('is_done',1)
             ->get();
 
         // Initialize monthlyScores and starCounts arrays
@@ -697,30 +715,39 @@ class StudentController extends Controller
                 ->where('program_id', $request->program_id)
                 ->count();
         }
-        $division = StudentProgress::where('student_id', $studentId)
+        $division = StudentProgress::where('student_id', $studentId)->where('is_done',1)->where('program_id', $request->program_id)
             ->count();
         if ($division == 0)
             $division = 1;
-        if (!$request->filled('from_date') && !$request->filled('to_date'))
+        if (!$request->filled('from_date') && !$request->filled('to_date')){
+             $threestars = StudentProgress::where('stars', 3)->where('student_id', $studentId)
+                ->where('program_id', $request->program_id)->where('is_done', 1)->count();
+            $twostars = StudentProgress::where('stars', 2)->where('student_id', $studentId)
+                ->where('program_id', $request->program_id)->where('is_done', 1)->count();
+            $onestar = StudentProgress::where('stars', 1)->where('student_id', $studentId)
+                ->where('program_id', $request->program_id)->where('is_done', 1)->count();
+                
+                if ($division == 0) {
+                $division = 1;
+            }
             $data['reports_percentages'] = [
-                'three_star' => round((StudentProgress::where('stars', 3)->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-                'two_star' => round((StudentProgress::where('stars', 2)->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-                'one_star' => round((StudentProgress::where('stars', 1)->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+                'three_star' => round(($threestars / $division) * 100),
+                'two_star' => round(($twostars / $division) * 100),
+                'one_star' => round(($onestar / $division) * 100),
 
             ];
+            
+        }
         else {
 
             $threestars = StudentProgress::where('stars', 3)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                ->where('program_id', $request->program_id)->count();
+                ->where('program_id', $request->program_id)->where('is_done', 1)->count();
             $twostars = StudentProgress::where('stars', 2)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                ->where('program_id', $request->program_id)->count();
+                ->where('program_id', $request->program_id)->where('is_done', 1)->count();
             $onestar = StudentProgress::where('stars', 1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
-                ->where('program_id', $request->program_id)->count();
+                ->where('program_id', $request->program_id)->where('is_done', 1)->count();
 
-            $division = StudentProgress::where('student_id', $studentId)
+            $division = StudentProgress::where('student_id', $studentId)->where('is_done', 1)->where('program_id', $request->program_id)
                 ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
 
 
@@ -733,6 +760,7 @@ class StudentController extends Controller
                 'one_star' => round(($onestar / $division) * 100),
 
             ];
+        
         }
         $test_types = TestTypes::all();
         $data['test_types'] = TestResource::make($test_types);
@@ -768,7 +796,7 @@ class StudentController extends Controller
      */
     public function StudentProgressByGroup(Request $request)
     {
-        $progress = StudentProgress::latest();
+        $progress = StudentProgress::latest()->where('is_done', 1);
         // Filter by month of created_at date if provided
         if ($request->filled('month')) {
             $month = $request->month;

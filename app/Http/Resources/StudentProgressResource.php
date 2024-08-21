@@ -5,6 +5,7 @@ use App\Models\Lesson;
 use App\Models\Test;
 
 use App\Models\Program;
+use App\Models\GameType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Carbon\Carbon;
@@ -49,12 +50,19 @@ class StudentProgressResource extends JsonResource
         
         $check = 1;
         foreach ($this->resource as $course) {
-            // dd($course);
+            $testId = $course->test_id;
+         $test = Test::where('id' , $testId)->with('game')->first();
+            if(Program::join('courses','programs.course_id','courses.id')->where('programs.id',$course->program_id)->select('courses.name')->first()->name == 'Arabic'){
+                if($gameName = GameType::find($test->game->game_type_id)->name_ar)
+               $gameName = GameType::find($test->game->game_type_id)->name_ar ?? '-';
+               else
+               $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
+            }else
+            $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
             $student_name = User::find($course->student_id)->name ?? '-';
             $createdDate = Carbon::parse($course->created_at);
             $created_at = date('d',strtotime($course->created_at));
             $testName = $course->tests->name;
-            $testId = $course->test_id;
             $type = $course->tests->type;
             // $teacher = User::find($course->teacher_id)->name;
             $status = $course->status;
@@ -63,17 +71,17 @@ class StudentProgressResource extends JsonResource
             $lessonName = Lesson::find($course->lesson_id)->name ?? '-';
             $programId = $course->program_id;
             $programName = Program::join('courses','programs.course_id','courses.id')->where('programs.id',$course->program_id)->first()->name;
-            $chapterName = Lesson::join('units','lessons.unit_id','units.id')->select('units.*')->first()->name;
-            $chapterID = Lesson::join('units','lessons.unit_id','units.id')->select('units.*')->first()->id;    
+            $chapterName = Lesson::join('units','lessons.unit_id','units.id')->where('unit_id',$course->unit_id)->select('units.*')->first()->name;
+            $chapterID = Lesson::join('units','lessons.unit_id','units.id')->where('unit_id',$course->unit_id)->select('units.*')->first()->id;    
             $score = $course->score;
             $star = $course->stars;
             $month= $createdDate->format('M');
             // $gameName = Lesson::with('game')->get();
-                    $test = Test::where('id' , $testId)->with('game')->first();
+                   
                     
 
 
-    $gameName = $test->game->inst ?? '-';
+    
 
         array_push($arr, [
             'student_name' => $student_name ?? '-',

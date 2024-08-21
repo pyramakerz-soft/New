@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\TeacherProgram;
 use App\Models\School;
 use App\Models\User;
+use App\Models\StudentLock;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
@@ -42,14 +43,24 @@ class TeacherResource extends JsonResource
             // ]);
         // }
                 
-        $arr['user'] =  User::where('id', $this->resource->id)->first();
-        $arr['program_data'] = TeacherProgram::with(['program.units.lessons' , 'stage'])->where('teacher_id', $this->resource->id)->get()->map(function($teacherProgram) {
-            $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->stage->name;
-           $teacherProgram->image = $teacherProgram->program->image;
-            
-            return $teacherProgram ;
-        });
- 
+        $arr['user'] =  User::with('school')->where('id', $this->resource->id)->first();
+        $arr['program_data'] = TeacherProgram::with(['program.units.lessons', 'stage'])
+    ->where('teacher_id', $this->resource->id)
+    ->get()
+    ->map(function($teacherProgram) {
+        $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->stage->name;
+        $teacherProgram->image = $teacherProgram->program->image;
+
+        // Iterate over each unit and set the is_active attribute
+        foreach ($teacherProgram->program->units as $unit) {
+            $unit->is_active = StudentLock::where('student_id', auth()->user()->id)
+                ->where('unit_id', $unit->id)
+                ->exists() ? 0 : 1;
+        }
+
+        return $teacherProgram;
+    });
+
         return $arr;
     }
 }

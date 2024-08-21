@@ -42,18 +42,18 @@ class TeacherAssignmentResource extends JsonResource
             
                     $id = $data->id;
                     $teacher_id = $data->test_id;
-                    $name = $data->tests->name;
+                    $name = $data->tests->name ?? '-';
                     $due_date = $data->due_date;
                     $start_date = $data->start_date;
-                    $diff = $data->tests->difficulty_level;
-                    $image = Test::find($data->test_id)->image;
+                    $diff = $data->tests->difficulty_level ?? '-';
+                    $image =  Test::find($data->test_id)->image ??  '-';
 
                 
                     array_push($arr, [
                         'id' => $id,
                         'test_id' => $teacher_id,
                         'name' =>$name,
-                        'image' => Test::find($data->test_id)->image,
+                        'image' => Test::find($data->test_id)->image ?? '-',
                         'created_at' => date('Y-n-j',strtotime($start_date)),
                         'created_at_form' => date('Y-n-j',strtotime($start_date)),
                         'diff_lvl' => $diff,

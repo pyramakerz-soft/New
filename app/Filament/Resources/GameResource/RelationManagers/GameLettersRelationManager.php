@@ -28,10 +28,25 @@ class GameLettersRelationManager extends RelationManager
                 Forms\Components\Toggle::make('main_question')
                     
                     ->required(),
+                    Forms\Components\Toggle::make('type_of_tool'),
+                Forms\Components\Toggle::make('hide_rings'),
                 Forms\Components\TextInput::make('sec_letter')
                     
                     ->maxLength(100),
+                //     Forms\Components\FileUpload::make('image')
+                //     ->nullable()
 
+                //     ->preserveFilenames()
+
+                //     ->disk('public')
+                // ,
+Forms\Components\FileUpload::make('image')
+                    ->dehydrated(fn($state) => filled($state))
+                    ->dehydrated(true)
+                    ->preserveFilenames()
+                    ->rules(['mimes:jpg,jpeg,png', 'max:10000'])
+
+                ,
             ]);
     }
 

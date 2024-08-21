@@ -26,14 +26,26 @@ class LessonResource extends JsonResource
             } else {
                 $type = null;
             }
+
             // Retrieve games and their stars
             $gamesWithStars = [];
-            $total_stars =0;
-            // dd($data->game);
+            $total_stars = 0;
+            $solved_games_count = 0;
+
             foreach ($data->game as $game) {
                 $stars = 0;
+                
+                // Check if student degree exists for the authenticated user
+                if (isset($game->studentDegrees[0]) && $game->studentDegrees[0]->student_id == auth()->id()) {
                     $stars = isset($game->studentDegrees[0]->stars) ? (int)$game->studentDegrees[0]->stars : 0;
+                }
+
+                // Only count stars from solved games (games where stars > 0)
+                if ($stars > 0) {
                     $total_stars += $stars;
+                    $solved_games_count++;
+                }
+
                 $gamesWithStars[] = [
                     'id' => $game->id,
                     'name' => $game->name,
@@ -57,7 +69,10 @@ class LessonResource extends JsonResource
                     'number' => $game->number,
                 ];
             }
-            $lesson_stars = round($total_stars/((sizeof($gamesWithStars) == 0) ? 1 : sizeof($gamesWithStars)));
+
+            // Calculate the average stars only for solved games
+            $lesson_stars = $solved_games_count > 0 ? round($total_stars / $solved_games_count) : 0;
+
             $arr[] = [
                 'id' => $data->id,
                 'name' => $data->name,
@@ -65,14 +80,14 @@ class LessonResource extends JsonResource
                 'main_letter' => $data->main_letter,
                 'warmup_id' => $data->warmup_id,
                 'unit_id' => $data->unit_id,
-                'stars' => Lesson::find($data->id)->stars,
+                'stars' => $lesson_stars,
                 'chapter' => Unit::find($data->unit_id),
                 'type' => $type,
                 'games' => $gamesWithStars,
                 'lesson_stars' => $lesson_stars,
-                // 'beginningEtestName' => $data->program->beginning->test ? $data->program->beginning->test->name : null,
             ];
         }
+
         return $arr;
     }
 }

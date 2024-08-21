@@ -12,7 +12,7 @@
         <div  wire:loading>Program name...</div>
         <div wire:loading.remove>
 
-            <?php echo $program->name; ?>
+            <?php echo htmlentities($program->name); ?>
 
         
         </div>
@@ -21,14 +21,14 @@
         <div>
         <div wire:loading>Course name...</div>
         <div wire:loading.remove>
-            <?php echo $program->course->name; ?>
+            <?php echo htmlentities($program->course->name); ?>
         </div>
 
 
         <div>
             <div wire:loading>Stage name...</div>
             <div wire:loading.remove>
-                <?php echo $program->stage->name; ?>
+                <?php echo htmlentities($program->stage->name); ?>
             
     </div>
 

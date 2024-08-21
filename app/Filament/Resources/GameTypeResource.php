@@ -25,8 +25,11 @@ class GameTypeResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Textarea::make('name')
-                ->unique()
+                ->unique(ignoreRecord:true)
                     ->required()
+                    ->maxLength(65535)
+                    ->columnSpanFull(),
+                Forms\Components\Textarea::make('name_ar')
                     ->maxLength(65535)
                     ->columnSpanFull(),
             ]);
@@ -37,6 +40,7 @@ class GameTypeResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable(),
+                Tables\Columns\TextColumn::make('name_ar')->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

@@ -143,7 +143,7 @@ class GameResource extends Resource
                 Forms\Components\TextInput::make('sentence')->label('Sentence'),
                  Forms\Components\FileUpload::make('video')
                     ->preserveFilenames()
-                    ->maxSize(204800)
+                    ->maxSize(2048000)
                     ->acceptedFileTypes(['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/mkv', 'video/webm']),
             ]);
     }

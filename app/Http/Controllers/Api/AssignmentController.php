@@ -129,7 +129,7 @@ class AssignmentController extends Controller
                 }
             }
         }
-        return response()->json(['message' => 'Test assigned successfully'], 201);
+        return response()->json(['msg' => 'Test assigned successfully'], 201);
     }
 
 }

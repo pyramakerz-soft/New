@@ -19,6 +19,7 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Models\StudentTest;
 use App\Models\TeacherProgram;
+use App\Models\StudentLock;
 use App\Http\Resources\TeacherResource;
 use App\Http\Resources\TeacherAssignmentResource;
 use App\Traits\HelpersTrait;
@@ -214,10 +215,15 @@ class AuthController extends Controller
             ->map(function ($teacherProgram) {
                 $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->stage->name;
                 $teacherProgram->image = $teacherProgram->program->image;
-
+        foreach ($teacherProgram->program->units as $unit) {
+            $unit->is_active = StudentLock::where('student_id', auth()->user()->id)
+                ->where('unit_id', $unit->id)
+                ->exists() ? 0 : 1;
+        }
                 return $teacherProgram;
             });
-
+// $datas=User::with(['school', 'details.stage', 'teacher_programs'])->where('role', 1)->find(auth()->user()->id);
+// $data['program_data'] = TeacherResource::make($datas);
         $data['token'] = $token;
 
         return $this->returnData('data', $data, 'User Data to update');

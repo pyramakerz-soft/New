@@ -33,10 +33,10 @@ trait HelpersTrait
   {
     return response()->json([
       'result' => false,
-      'errNum' => $errNum,
-      'message' => $msg,
-      'data'   => (object)[],
-    ], 200);
+      'errNum' => 404,
+      'msg' => $msg,
+      'data'   => [],
+    ], 404);
     // ],404);
 
   }
@@ -52,7 +52,7 @@ trait HelpersTrait
     return response()->json([
       'result' => true,
       'errNum' => $errNum,
-      'message' => $msg,
+      'msg' => $msg,
       'data'   => (object)[],
     ], 200);
   }
@@ -62,8 +62,17 @@ trait HelpersTrait
     return response()->json([
       'result' => true,
       'errNum' => "S000",
-      'message' => $msg,
+      'msg' => $msg,
       $key => $value
+    ]);
+  }
+  public function returnData2($key, $value, $msg = "")
+  {
+    return response()->json([
+      'result' => true,
+      'errNum' => "S000",
+      'msg' => $msg,
+      $key => (object)$value
     ]);
   }
   public function returnValidationError($code = "E001", $validator)

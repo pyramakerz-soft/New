@@ -62,7 +62,9 @@ class LessonResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(65535)
-                    ->unique(ignoreRecord: true)
+                ,
+                Forms\Components\TextInput::make('mob_lesson_name')
+                    ->maxLength(65535)
                 ,
                 Forms\Components\TextInput::make('number')
                     ->required()

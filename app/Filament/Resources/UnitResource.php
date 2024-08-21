@@ -57,11 +57,12 @@ class UnitResource extends Resource
 
                 ,
                 Hidden::make('id'),
+                Forms\Components\TextInput::make('mob_unit_name')
+                    ->maxLength(80),
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(30)
                     // ->notRegex('/^.+$/i')
-                    ->unique(ignoreRecord: true)
                     ->rule(static function (Forms\Get $get, Forms\Components\Component $component): Closure {
                         return static function (string $attribute, $value, Closure $fail) use ($get, $component) {
                             $existingNumber = Unit::where('program_id', $get('program_id'))->where('name', $get('name'))->where('id', '!=', $get('id'))->first();

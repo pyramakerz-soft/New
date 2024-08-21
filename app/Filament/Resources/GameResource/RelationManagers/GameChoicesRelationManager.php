@@ -24,6 +24,8 @@ class GameChoicesRelationManager extends RelationManager
                     ->maxLength(255),
                 Forms\Components\Toggle::make('is_correct')
                     ->required(),
+                Forms\Components\Toggle::make('type_of_tool'),
+                Forms\Components\Toggle::make('hide_rings'),
             ]);
     }
 

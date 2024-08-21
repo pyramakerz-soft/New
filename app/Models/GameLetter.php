@@ -12,5 +12,10 @@ class GameLetter extends Model
     {
         return $this->belongsTo(Game::class);
     }
+        public function getImageAttribute($val)
+    {
+        return ($val !== null) ? asset('storage/' . basename($val)) : "";
+
+    }
 
 }

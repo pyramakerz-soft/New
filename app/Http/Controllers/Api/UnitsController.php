@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 use App\Traits\HelpersTrait;
+use App\Http\Resources\UnitResource;
+
 
 class UnitsController extends Controller
 {
@@ -38,7 +40,7 @@ class UnitsController extends Controller
     {
 
         $units = Unit::where("program_id", $id)->orderBy('number','ASC')->get();
-
+        $units = UnitResource::make($units);
         return $this->returnData('data', $units, "All units");
     }
 }

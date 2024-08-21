@@ -11,7 +11,7 @@
         <div class="aho" style="width: 50%; text-align: center">
             <a href="{{ url("admin/programs/program/{$program->id}/view") }}" class="program-container" style="width: 50%">
                 <img src="{{ asset("storage/$program->image") }}" alt="{{ $program->image }}">
-                <?php echo $program->course->name; ?>
+                <?php echo htmlentities($program->course->name); ?>
             </a>
         </div>
 

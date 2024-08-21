@@ -57,7 +57,7 @@ class TeachersController extends Controller
     public function teacherAssignments()
     {
 
-        $studentsDidAss = StudentTest::where('teacher_id', auth()->user()->id)->where('student_tests.status', 0)->where('due_date', '>=', date('Y-m-d', strtotime(now())))->orderBy('due_date', 'ASC')->get();
+        $studentsDidAss = StudentTest::where('teacher_id', auth()->user()->id)->where('due_date', '>=', date('Y-m-d', strtotime(now())))->orderBy('due_date', 'ASC')->where('start_date','>=',Carbon::parse(now())->startOfDay())->get();
 
         $data = TeacherAssignmentResource::make($studentsDidAss);
         return $this->returnData('data', $data, "Teacher Assignments ");
@@ -437,10 +437,10 @@ class TeachersController extends Controller
         // Initialize query builder
         $query = StudentTest::with('tests')->where('student_id', $request->student_id);
         if ($query->get()->isEmpty())
-            return $this->returnError('404', 'No student progress found for the given date range.');
+            return $this->returnData2('data',[], 'No reports are available for this student at the moment.');
 
         if (!StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()) {
-            return $this->returnError('404', 'No student progress found for the given date range.');
+            return $this->returnData2('data', [],'No reports are available for this student at the moment.');
         }
         $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
         $latest = Game::find($latest_game)->lesson_id;
@@ -464,9 +464,12 @@ class TeachersController extends Controller
 
             $query->where('student_id', $request->student_id)
                 ->where(function ($query) use ($fromDate, $toDate) {
-                    $query->whereBetween('start_date', [$fromDate, $toDate])
-                        ->orWhereBetween('due_date', [$fromDate, $toDate]);
+                    $query->whereBetween('start_date', [$fromDate, $toDate]);
                 });
+                
+                if($query->get()->isEmpty())
+            return $this->returnError('404', 'No reports found for the selected date range.');
+        
         }
 
 
@@ -537,9 +540,9 @@ class TeachersController extends Controller
             'pending' => $pendingCount,
         ];
         $data['assignments_percentages'] = [
-            'completed' => round($finishedPercentage),
-            'overdue' => round($overduePercentage),
-            'pending' => round($pendingPercentage),
+            'completed' => round($finishedPercentage,2),
+            'overdue' => round($overduePercentage,2),
+            'pending' => round($pendingPercentage,2),
         ];
         $data['tests'] = StudentAssignmentResource::make($tests);
         $data['test_types'] = TestResource::make($test_types);
@@ -569,10 +572,10 @@ class TeachersController extends Controller
     {
         // Retrieve student progress for the given student and program
         $query = StudentProgress::where('student_id', $request->student_id)
-            ->where('program_id', $request->program_id);
+            ->where('program_id', $request->program_id)->where('is_done',1);
 
         if ($query->get()->isEmpty())
-            return $this->returnData('data', [], 'No student progress found for the given date range.');
+            return $this->returnData('data',[], 'No reports are available for this student at the moment.');
         // Apply filters if provided
         if ($request->has('unit_id')) {
             $query->where('unit_id', $request->unit_id);
@@ -646,6 +649,10 @@ class TeachersController extends Controller
                 $lessonsMastery[$progress->lesson_id] = [
                     'lesson_id' => $progress->lesson_id,
                     'name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name . " | " . Lesson::find($progress->lesson_id)->name,
+                    'unit_name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name,
+                    'lesson_name' =>  Lesson::find($progress->lesson_id)->name,
+                    'unit_index' => "U".Unit::find(Lesson::find($progress->lesson_id)->unit_id)->number,
+                    'lesson_index' =>  "L".Lesson::find($progress->lesson_id)->number,
                     'failed' => 0,
                     'introduced' => 0,
                     'practiced' => 0,
@@ -889,7 +896,7 @@ class TeachersController extends Controller
             ];
         }
 
-        return $this->returnData('data', $response, 'deh api bta3ml 7agat');
+        return $this->returnData('data', $response, 'Mastery Report');
     }
 
 
@@ -914,7 +921,7 @@ class TeachersController extends Controller
             'student_id' => 'required|integer',
         ]);
         if (!StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first())
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData2('data',[], 'No reports are available for this student at the moment.');
         $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
         $latest = Game::find($latest_game)->lesson_id;
         $latest_lesson = Lesson::find($latest)->name;
@@ -926,10 +933,10 @@ class TeachersController extends Controller
 
         // Initialize query builder with student ID and program ID
         $progressQuery = StudentProgress::where('student_id', $studentId)
-            ->where('program_id', $request->program_id);
+            ->where('program_id', $request->program_id)->where('is_done',1);
 
         if ($progressQuery->get()->isEmpty())
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData2('data',[], 'No student progress found .');
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
             $from_date = Carbon::parse($request->from_date)->startOfDay();
             $to_date = Carbon::parse($request->to_date)->endOfDay();
@@ -1040,29 +1047,30 @@ class TeachersController extends Controller
                 ->count();
         }
 
-        $division = StudentProgress::where('student_id', $studentId)->count();
+        $division = StudentProgress::where('student_id', $studentId)->where('program_id',$request->program_id)->where('is_done',1)->count();
         if ($division == 0) {
             $division = 1;
         }
 
         if (!$request->filled('from_date') && !$request->filled('to_date')) {
             $data['reports_percentages'] = [
-                'first_trial' => round((StudentProgress::where('mistake_count', 0)->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-                'second_trial' => round((StudentProgress::where('mistake_count', 1)->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-                'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+                'first_trial' => round((StudentProgress::where('mistake_count', 0)->where('is_done',1)->where('student_id', $studentId)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
+                    
+                'second_trial' => round((StudentProgress::where('mistake_count', 1)->where('is_done',1)->where('student_id', $studentId)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
+                'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done',1)->where('student_id', $studentId)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
             ];
         } else {
-            $threestars = StudentProgress::where('mistake_count', 0)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $threestars = StudentProgress::where('mistake_count', 0)->where('is_done',1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
-            $twostars = StudentProgress::where('mistake_count', 1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $twostars = StudentProgress::where('mistake_count', 1)->where('is_done',1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
-            $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done',1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
 
-            $division = StudentProgress::where('student_id', $studentId)
+            $division = StudentProgress::where('student_id', $studentId)->where('is_done',1)->where('program_id',$request->program_id)
                 ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
 
             if ($division == 0) {
@@ -1093,10 +1101,11 @@ class TeachersController extends Controller
             ->where('program_id', $programId)
             ->where('is_done', 1)
             // ->whereBetween('created_at', [$fromDate, $toDate])
-            ->get();
-
-        if ($studentProgress->isEmpty())
-            return $this->returnError('404', 'No student progress found .');
+            ;
+        if($studentProgress->get()->isEmpty()){
+            return $this->returnData('data',[], 'No reports are available for this student at the moment.');
+        }
+        
         $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
         $latest = Game::find($latest_game)->lesson_id;
         $latest_lesson = Lesson::find($latest)->name;
@@ -1105,12 +1114,18 @@ class TeachersController extends Controller
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
             $fromDate = Carbon::parse($request->from_date)->startOfDay();
             $toDate = Carbon::parse($request->to_date)->endOfDay();
-            $studentProgress->whereBetween('created_at', [$fromDate, $toDate]);
+            $studentProgress->whereBetween('created_at', [$fromDate, $toDate])
+            ->get();
         }
+        
+        // if ($studentProgress->isEmpty())
+        //     return $this->returnError('404', 'No reports are available for this student at the moment.');
+        $studentProgress = $studentProgress->get();
+        // dd($studentProgress);
         if ($studentProgress->isEmpty()) {
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData('data',[], 'No reports are available for this student at the moment.');
         }
-
+// $studentProgress = $studentProgress->get();
         $skillsData = [];
         foreach ($studentProgress as $progress) {
             // Eager load the relationships
@@ -1173,7 +1188,7 @@ class TeachersController extends Controller
         }
 
         if (empty($skillsData)) {
-            return $this->returnData('data', [], 'No skills data found for the given student progress.');
+            return $this->returnData('data', [], 'There are no reports available for the selected date range.');
         }
 
         // Convert the associative array to an indexed array
@@ -1215,7 +1230,7 @@ class TeachersController extends Controller
         $students = GroupStudent::where('group_id', $groupId)->pluck('student_id');
 
         if ($students->isEmpty()) {
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData2('data',[], 'This class currently has no students enrolled.');
         }
 
         // Initialize the query builder for student progress
@@ -1223,7 +1238,7 @@ class TeachersController extends Controller
             ->whereIn('student_id', $students);
 
         if ($progressQuery->get()->isEmpty())
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData2('data',[], 'No reports are available for this class at the moment.');
         if ($request->filled('future') && $request->future != NULL) {
             if ($request->future == 1) {
                 // No additional conditions needed
@@ -1240,7 +1255,7 @@ class TeachersController extends Controller
             $toDate = Carbon::parse($request->to_date)->endOfDay();
             // $from_date = Carbon::parse($request->from_date)->startOfDay();
             // $to_date = Carbon::parse($request->to_date)->endOfDay();
-            $progressQuery->whereBetween('due_date', [$fromDate, $toDate]);
+            $progressQuery->whereBetween('start_date', [$fromDate, $toDate]);
         }
 
         // Filter by program ID if provided
@@ -1306,9 +1321,9 @@ class TeachersController extends Controller
             'pending' => $pendingCount,
         ];
         $data['assignments_percentages'] = [
-            'completed' => round($finishedPercentage),
-            'overdue' => round($overduePercentage),
-            'pending' => round($pendingPercentage),
+            'completed' => round($finishedPercentage,2),
+            'overdue' => round($overduePercentage,2),
+            'pending' => round($pendingPercentage,2),
         ];
         $data['tests'] = StudentAssignmentResource::make($tests);
         $data['test_types'] = TestResource::make($test_types);
@@ -1343,15 +1358,15 @@ class TeachersController extends Controller
         $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
 
         if ($students->isEmpty()) {
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData('data',[], 'This class currently has no students enrolled.');
         }
 
         // Initialize query builder for student progress
         $query = StudentProgress::whereIn('student_id', $students)
-            ->where('program_id', $request->program_id);
+            ->where('program_id', $request->program_id)->where('is_done',1);
 
         if ($query->get()->isEmpty())
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData('data',[], 'No reports are available for this class at the moment.');
         // Apply filters if provided
         if ($request->has('unit_id')) {
             $query->where('unit_id', $request->unit_id);
@@ -1386,7 +1401,7 @@ class TeachersController extends Controller
 
 
         if ($student_progress->isEmpty()) {
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData('data','', 'No reports are available for this class at the moment.');
         }
         // Process each progress record
         foreach ($student_progress as $progress) {
@@ -1420,8 +1435,12 @@ class TeachersController extends Controller
             // Group by lesson
             if (!isset($lessonsMastery[$progress->lesson_id])) {
                 $lessonsMastery[$progress->lesson_id] = [
-                    'lesson_id' => $progress->lesson_id,
+                     'lesson_id' => $progress->lesson_id,
                     'name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name . " | " . Lesson::find($progress->lesson_id)->name,
+                    'unit_name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name,
+                    'lesson_name' =>  Lesson::find($progress->lesson_id)->name,
+                    'unit_index' => "U".Unit::find(Lesson::find($progress->lesson_id)->unit_id)->number,
+                    'lesson_index' =>  "L".Lesson::find($progress->lesson_id)->number,
                     'failed' => 0,
                     'introduced' => 0,
                     'practiced' => 0,
@@ -1658,7 +1677,7 @@ class TeachersController extends Controller
             ];
         }
 
-        return $this->returnData('data', $response, 'deh api bta3ml 7agat');
+        return $this->returnData('data', $response, 'Mastery report');
     }
 
 
@@ -1672,13 +1691,15 @@ class TeachersController extends Controller
     {
         // Get the student IDs for the given group ID
         $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
-
+         if ($students->isEmpty()) {
+            return $this->returnData2('data',[], 'This class currently has no students enrolled.');
+        }
         // Initialize query builder with student IDs and program ID
         $progressQuery = StudentProgress::whereIn('student_id', $students)
-            ->where('program_id', $request->program_id);
+            ->where('program_id', $request->program_id)->where('is_done',1);
 
         if ($progressQuery->get()->isEmpty())
-            return $this->returnError('404', 'No student progress found .');
+            return $this->returnData2('data',[], 'No reports are available for this class at the moment.');
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
             $from_date = Carbon::parse($request->from_date)->startOfDay();
             $to_date = Carbon::parse($request->to_date)->endOfDay();
@@ -1784,34 +1805,34 @@ class TeachersController extends Controller
         if ($request->filled('stars')) {
             $data['counts'] = StudentProgress::where('stars', $request->stars)->count();
         } else {
-            $data['counts'] = StudentProgress::whereIn('student_id', $students)
+            $data['counts'] = StudentProgress::whereIn('student_id', $students)->where('is_done',1)
                 ->where('program_id', $request->program_id)
                 ->count();
         }
 
-        $division = StudentProgress::whereIn('student_id', $students)->count();
+        $division = StudentProgress::whereIn('student_id', $students)->where('program_id',$request->program_id)->where('is_done',1)->count();
         if ($division == 0) {
             $division = 1;
         }
 
         if (!$request->filled('from_date') && !$request->filled('to_date')) {
             $data['reports_percentages'] = [
-                'first_trial' => round((StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-                'second_trial' => round((StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
-                'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->whereIn('student_id', $students)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+                'first_trial' => round((StudentProgress::where('mistake_count', 0)->where('is_done',1)->whereIn('student_id', $students)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
+                'second_trial' => round((StudentProgress::where('mistake_count', 1)->where('is_done',1)->whereIn('student_id', $students)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
+                'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done',1)->whereIn('student_id', $students)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
             ];
         } else {
-            $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->where('is_done',1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
-            $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->where('is_done',1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
-            $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done',1)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
 
-            $division = StudentProgress::whereIn('student_id', $students)
+            $division = StudentProgress::whereIn('student_id', $students)->where('is_done',1)->where('program_id',$request->program_id)
                 ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
 
             if ($division == 0) {
@@ -1841,13 +1862,15 @@ class TeachersController extends Controller
 
         // Get the student IDs for the given group ID
         $students = GroupStudent::where('group_id', $groupId)->pluck('student_id');
-
+ if ($students->isEmpty()) {
+            return $this->returnData('data',[], 'This class currently has no students enrolled.');
+        }
         // Initialize an array to store the skills data for each student
         $allStudentsSkillsData = [];
 
         // Loop through each student to retrieve their progress
         foreach ($students as $studentId) {
-            $studentProgressQuery = StudentProgress::where('student_id', $studentId)
+            $studentProgressQuery = StudentProgress::where('student_id', $studentId)->where('is_done',1)
                 ->where('program_id', $programId);
 
             if ($request->filled(['from_date', 'to_date']) && $request->from_date != null && $request->to_date != null) {
@@ -1927,7 +1950,7 @@ class TeachersController extends Controller
         }
 
         if (empty($allStudentsSkillsData)) {
-            return $this->returnData('data', [], 'No skills data found for the given student progress.');
+            return $this->returnData('data', [], 'There are no reports available for the selected date range.');
         }
 
         // Prepare data for Excel export
