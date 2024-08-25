@@ -51,7 +51,8 @@ class StudentProgressResource extends JsonResource
         $check = 1;
         foreach ($this->resource as $course) {
             $testId = $course->test_id;
-         $test = Test::where('id' , $testId)->with('game')->first();
+         $test = Test::with('game')->where('id' , $testId)->first();
+        if($test->game){
             if(Program::join('courses','programs.course_id','courses.id')->where('programs.id',$course->program_id)->select('courses.name')->first()->name == 'Arabic'){
                 if($gameName = GameType::find($test->game->game_type_id)->name_ar)
                $gameName = GameType::find($test->game->game_type_id)->name_ar ?? '-';
@@ -59,6 +60,10 @@ class StudentProgressResource extends JsonResource
                $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
             }else
             $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
+        }else{
+            continue;
+            $gameName = '-';
+        }
             $student_name = User::find($course->student_id)->name ?? '-';
             $createdDate = Carbon::parse($course->created_at);
             $created_at = date('d',strtotime($course->created_at));

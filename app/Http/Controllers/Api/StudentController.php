@@ -157,88 +157,47 @@ class StudentController extends Controller
      * )
      */
     public function studentPrograms()
-    {
-        // $data['programs'] = User::with(['userCourses.program','userCourses.program.course','userCourses.program.student_tests'])->where('id',auth()->user()->id)->first();
-        // $data['programs'] = User::with([
-        //     'userCourses.program',
-        //     'userCourses.program.course',
-        //     'userCourses.program.student_tests' => function ($query) {
-        //         $query->where('student_id', auth()->user()->id)
-        //             ->where('status', 0)->where('start_date', '<=', date('Y-m-d', strtotime(now())))->where('due_date', '>=', date('Y-m-d', strtotime(now())));
-        //     }
-        // ])
-        //     ->where('id', auth()->user()->id)
-        //     ->first();
+{
+    // Set the timezone to Egypt (Cairo)
+    $currentDate = Carbon::now()->setTimezone('Africa/Cairo');
+    $todayStart = $currentDate->copy()->startOfDay()->toDateTimeString();
+    $todayEnd = $currentDate->copy()->endOfDay()->toDateTimeString();
 
-        // // Filter to ensure unique lesson_id in student_tests
-        // $data['programs']->userCourses->each(function ($course) {
-        //     $course->program->student_tests = $course->program->student_tests->unique('lesszon_id')->where('due_date', '>=', date('Y-m-d', strtotime(now())))->where('start_date', '<=', date('Y-m-d', strtotime(now())));
-        //     $course->program->student_tests->each(function ($student_test) {
-        //         // $student_test->assignment_name = $student_test->tests->name ?? 'N/A';
-        //         $student_test->assignment_name = $student_test->tests->name ?? 'N/A';
+    $data['programs'] = User::with([
+        'userCourses.program',
+        'userCourses.program.course',
+        'userCourses.program.student_tests' => function ($query) use ($todayStart, $todayEnd) {
+            $query->where('student_id', auth()->user()->id)
+                ->where('status', 0)
+                ->where('start_date', '<=', $todayEnd)
+                ->where('due_date', '>=', $todayStart);
+        },
+    ])
+        ->where('id', auth()->user()->id)
+        ->first();
 
-        //     });
-        // });
+    // Filter to ensure unique lesson_id in student_tests
+    $data['programs']->userCourses->each(function ($course) {
+        $course->program->student_tests = $course->program->student_tests
+            ->where('status', '!=', 1)
+            ->where('student_id', auth()->user()->id);
 
+        if (isset($course->program->student_tests[0])) {
+            foreach ($course->program->student_tests as $test) {
+                $test->assignment_name = Test::find($test->test_id)->name;
+            }
+        }
+    });
 
+    $data['test_types'] = TestTypes::all();
+    $data['count'] = StudentTest::where('student_id', auth()->user()->id)
+        ->where('status', '=', '0')
+        ->where('due_date', '>=', $todayStart)
+        ->where('start_date', '<=', $todayEnd)
+        ->count();
 
-
-
-
-        // $data['test_types'] = TestTypes::all();
-        // $data['count'] = StudentTest::where('student_id', auth()->user()->id)->where('status', '=', '0')->where('due_date', '>=', date('Y-m-d', strtotime(now())))->where('start_date', '<=', date('Y-m-d', strtotime(now())))->count();
-        // return $this->returnData('data', $data, "All groups for the student");
-
-        $data['programs'] = User::with([
-            'userCourses.program',
-            'userCourses.program.course',
-            'userCourses.program.student_tests' => function ($query) {
-                $query->where('student_id', auth()->user()->id)
-                    ->where('status', 0)
-                    ->where('start_date', '<=', date('Y-m-d', strtotime(now())))
-                    ->where('due_date', '>=', date('Y-m-d', strtotime(now())));
-            },
-
-        ])
-            ->where('id', auth()->user()->id)
-            ->first();
-
-        // Filter to ensure unique lesson_id in student_tests
-        $data['programs']->userCourses->each(function ($course) {
-            $course->program->student_tests = $course->program->student_tests->where('status', '!=', 1)
-                ->where('student_id', auth()->user()->id);
-            if (isset($course->program->student_tests[0]))
-                foreach ($course->program->student_tests as $test) {
-                    // if($test->id == '1006')
-                    // dd($test,Test::find($test->test_id)->name);
-                    $test->assignment_name = Test::find($test->test_id)->name;
-
-                    // dd($test);
-                    // array_push($test,['assignment_name' => Test::find($test->test_id)->name]);
-                    // if(isset($course->program->student_tests[0]))
-                    // dd($test);
-
-                }
-            // dd($course->program->student_tests);
-            // $course->program->student_tests->each(function ($student_test) {
-            //     // if(!$student_test->tests->name)
-            //     // dd($student_test->tests);
-            //     $student_test->assignment_name = $student_test->tests->name ?? '-';
-            // });
-
-        });
-
-        $data['test_types'] = TestTypes::all();
-        $data['count'] = StudentTest::where('student_id', auth()->user()->id)
-            ->where('status', '=', '0')
-            ->where('due_date', '>=', date('Y-m-d', strtotime(now())))
-            ->where('start_date', '<=', date('Y-m-d', strtotime(now())))
-            ->count();
-
-        return $this->returnData('data', $data, "All groups for the student");
-
-    }
-
+    return $this->returnData('data', $data, "All groups for the student");
+}
     public function getNotification(Request $request)
     {
         $request->validate([
@@ -341,10 +300,10 @@ class StudentController extends Controller
 
         // Retrieve the latest student data
         $student_degree = StudentDegree::where('student_id', $student->student_id)->orderBy('id', 'desc')->first();
-        if (isset($student_degree->game_id)) {
+        if (isset($student_degree->game_id) && isset(Game::find($student_degree->game_id)->lesson_id)) {
             $latest_game = $student_degree->game_id;
-            $latest_lesson_id = Game::find($latest_game)->lesson_id;
-            $latest_lesson = Lesson::find($latest_lesson_id)->name;
+            $latest_lesson_id = Game::find($latest_game)->lesson_id ?? '-';
+            $latest_lesson = Lesson::find($latest_lesson_id)->name ?? '-';
             $latest_unit = Unit::find(Lesson::find($latest_lesson_id)->unit_id)->name;
             $latest = $latest_unit . " " . $latest_lesson;
         }

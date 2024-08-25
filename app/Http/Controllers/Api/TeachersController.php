@@ -14,6 +14,7 @@ use App\Models\TestQuestion;
 use App\Models\StudentProgress;
 use App\Models\GroupStudent;
 use App\Models\StudentDegree;
+use App\Models\Program;
 use App\Models\Test;
 
 use App\Models\User;
@@ -436,17 +437,23 @@ class TeachersController extends Controller
     {
         // Initialize query builder
         $query = StudentTest::with('tests')->where('student_id', $request->student_id);
+ 
         if ($query->get()->isEmpty())
             return $this->returnData2('data',[], 'No reports are available for this student at the moment.');
 
-        if (!StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()) {
-            return $this->returnData2('data', [],'No reports are available for this student at the moment.');
-        }
+        // if (!StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()) {
+        //     return $this->returnData2('data', [],'No reports are available for this student at the moment.');
+        // }
+        if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first())))
+        if(isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)){
         $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
         $latest = Game::find($latest_game)->lesson_id;
-        $latest_lesson = Lesson::find($latest)->name;
+        $latest_lesson = Lesson::find($latest)->name ;
         $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
+        
         $data['student_latest'] = $latest_unit . " " . $latest_lesson;
+        }else
+        $daata['student_latest'] = '-';
         if ($request->filled('future') && $request->future != NULL) {
             if ($request->future == 1) {
                 // No additional conditions needed
@@ -608,12 +615,24 @@ class TeachersController extends Controller
         $gamesMastery = [];
         $skillsMastery = [];
         $gameTypesMastery = [];
-
+if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))){
+       if(isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)){
         $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
         $latest = Game::find($latest_game)->lesson_id;
-        $latest_lesson = Lesson::find($latest)->name;
+        $latest_lesson = Lesson::find($latest)->name ;
         $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
-
+        
+        $data['student_latest'] = $latest_unit . " " . $latest_lesson;
+        }else{
+        $data['student_latest'] = '-';
+            $latest_unit ='-';
+            $latest_lesson ='-';
+        }
+    
+}else{
+     $latest_unit ='-';
+            $latest_lesson ='-';
+}
         // Process each progress record
         foreach ($student_progress as $progress) {
             // Retrieve the test and its related game, game type, and skills
@@ -640,7 +659,7 @@ class TeachersController extends Controller
                     'total_score' => 0,
                     'mastery_percentage' => 0,
                     'lessons' => [],
-                    'latest_prog' => $latest_unit . " " . $latest_lesson
+                    'latest_prog' => $latest_unit . " " . $latest_lesson 
                 ];
             }
 
@@ -665,11 +684,22 @@ class TeachersController extends Controller
                 ];
             }
 
+
+ if(Program::join('courses','programs.course_id','courses.id')->where('programs.id',$progress->program_id)->select('courses.name')->first()->name == 'Arabic'){
+                if($gameName = GameType::find($test->game->game_type_id)->name_ar)
+               $gameName = GameType::find($test->game->game_type_id)->name_ar ?? '-';
+               else
+               $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
+            }
+               $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
+            
+            
             // Group by game type
             if (!isset($gameTypesMastery[$gameType->id])) {
                 $gameTypesMastery[$gameType->id] = [
                     'game_type_id' => $gameType->id,
-                    'name' => GameType::find($gameType->id)->name,
+                    // 'name' => GameType::find($gameType->id)->name,
+                    'name' => $gameName,
                     'failed' => 0,
                     'introduced' => 0,
                     'practiced' => 0,
@@ -698,8 +728,9 @@ class TeachersController extends Controller
                     'latest_prog' => $latest_unit . " " . $latest_lesson
                 ];
             }
-
             // Group by skill
+            
+            // dd($gameType->skills->where('lesson_id', $progress->lesson_id)->unique('skill'),$progress->lesson_id);
             if ($gameType && $gameType->skills->unique()) {
                 foreach ($gameType->skills->where('lesson_id', $progress->lesson_id)->unique('skill') as $gameSkill) {
                     $skill = $gameSkill->skill;
@@ -920,13 +951,21 @@ class TeachersController extends Controller
             'program_id' => 'required|integer',
             'student_id' => 'required|integer',
         ]);
-        if (!StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first())
-            return $this->returnData2('data',[], 'No reports are available for this student at the moment.');
+        // if (!StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first())
+        //     return $this->returnData2('data',[], 'No reports are available for this student at the moment.');
+        if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))){
+         if(isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)){
         $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
         $latest = Game::find($latest_game)->lesson_id;
-        $latest_lesson = Lesson::find($latest)->name;
+        $latest_lesson = Lesson::find($latest)->name ;
         $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
+        
         $data['student_latest'] = $latest_unit . " " . $latest_lesson;
+        }else
+        $data['student_latest'] = '-';
+            
+        }else
+        $data['student_latest'] = '-';
         // dd($latest_lesson,$latest_unit);
         // Get the authenticated student's ID
         $studentId = $request->student_id;
@@ -1106,11 +1145,19 @@ class TeachersController extends Controller
             return $this->returnData('data',[], 'No reports are available for this student at the moment.');
         }
         
+        if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))){
+         if(isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)){
         $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
         $latest = Game::find($latest_game)->lesson_id;
-        $latest_lesson = Lesson::find($latest)->name;
+        $latest_lesson = Lesson::find($latest)->name ;
         $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
+        
         $data['student_latest'] = $latest_unit . " " . $latest_lesson;
+        }else
+        $data['student_latest'] = '-';
+        }
+        else
+        $data['student_latest'] = '-';
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
             $fromDate = Carbon::parse($request->from_date)->startOfDay();
             $toDate = Carbon::parse($request->to_date)->endOfDay();
