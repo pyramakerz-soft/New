@@ -102,7 +102,7 @@ class LessonResource extends JsonResource
 
             // Calculate the average stars only for solved games
             $lesson_stars = $solved_games_count > 0 ? round($total_stars / $solved_games_count) : 0;
-
+// dd($lesson_stars,$solved_games_count,$total_stars);
             $arr[] = [
                 'id' => $data->id,
                 'name' => $data->name,
