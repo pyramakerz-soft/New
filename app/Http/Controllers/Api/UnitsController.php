@@ -39,7 +39,7 @@ class UnitsController extends Controller
     public function index($id)
     {
 
-        $units = Unit::where("program_id", $id)->orderBy('number','ASC')->get();
+        $units = Unit::where("program_id", $id)->where('is_active',1)->orderBy('number','ASC')->get();
         $units = UnitResource::make($units);
         return $this->returnData('data', $units, "All units");
     }

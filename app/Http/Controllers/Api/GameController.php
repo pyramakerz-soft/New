@@ -134,8 +134,8 @@ class GameController extends Controller
             ->join('units', 'units.id', 'lessons.unit_id')
             ->join('programs', 'programs.id', 'units.program_id')
             ->join('stages','programs.stage_id','stages.id')
-            ->where('programs.stage_id', $userStage)
-            ->select('games.*','stages.mob_stage_name as stage_name')
+            // ->where('programs.stage_id', $userStage)
+            ->select('games.*','stages.mob_stage_name as stage_names')
             ->get();
         //     else
         // $games = Game::with(['gameImages', 'gameLetters','gameChoices', 'gameTypes', 'lesson.unit.program.course', 'lesson.unit','studentDegrees'])

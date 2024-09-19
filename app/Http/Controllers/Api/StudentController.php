@@ -156,7 +156,7 @@ class StudentController extends Controller
      *     )
      * )
      */
-    public function studentPrograms()
+  public function studentPrograms()
 {
     // Set the timezone to Egypt (Cairo)
     $currentDate = Carbon::now()->setTimezone('Africa/Cairo');
@@ -173,17 +173,34 @@ class StudentController extends Controller
                 ->where('due_date', '>=', $todayStart);
         },
     ])
-        ->where('id', auth()->user()->id)
-        ->first();
+    ->where('id', auth()->user()->id)
+    ->first();
 
-    // Filter to ensure unique lesson_id in student_tests
-    $data['programs']->userCourses->each(function ($course) {
-        $course->program->student_tests = $course->program->student_tests
+    // Iterate through each user course and program to update course name with stage
+    $data['programs']->userCourses->each(function ($userCourse) {
+        $program = $userCourse->program;
+
+        // Ensure student tests are filtered correctly
+        $program->student_tests = $program->student_tests
             ->where('status', '!=', 1)
             ->where('student_id', auth()->user()->id);
 
-        if (isset($course->program->student_tests[0])) {
-            foreach ($course->program->student_tests as $test) {
+        // Fetch the related stage name based on stage_id
+        $stage = Stage::find($program->stage_id);
+        if ($stage) {
+            $stageName = $stage->name;
+
+            // Clone the course object to avoid affecting other programs
+            $newCourse = clone $program->course;
+            $newCourse->name .= ' ' . $stageName;
+
+            // Set the modified course back to the program
+            $program->setRelation('course', $newCourse);
+        }
+        // $userCourse->program->stage_id = UserDetails::where('user_id',auth()->user()->id)->first()->stage_id;
+        // Update assignment names in student tests
+        if (isset($program->student_tests[0])) {
+            foreach ($program->student_tests as $test) {
                 $test->assignment_name = Test::find($test->test_id)->name;
             }
         }
@@ -897,7 +914,7 @@ class StudentController extends Controller
 
         // Update the assignment status
 
-        $s_test->status = 1;
+        $s_test->status = ($stars != 0) ? 1 : 0;
         $s_test->update();
 
         return $this->returnData('data', $progress, 'Progress Saved!');

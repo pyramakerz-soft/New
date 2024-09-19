@@ -12,6 +12,7 @@ use App\Models\Group;
 use App\Models\StudentTest;
 use App\Models\TestQuestion;
 use App\Models\StudentProgress;
+use App\Models\GroupTeachers;
 use App\Models\GroupStudent;
 use App\Models\StudentDegree;
 use App\Models\Program;
@@ -339,11 +340,31 @@ class TeachersController extends Controller
      *     )
      * )
      */
-    public function teacherClasses(Request $request)
-    {
-        $data['classes'] = Group::where('teacher_id', auth()->user()->id)->where('stage_id', $request->stage_id)->where('program_id', $request->program_id)->get();
-        return $this->returnData('data', $data, "Teacher Assignments ");
-    }
+   public function teacherClasses(Request $request)
+{
+
+    // Fetch authenticated user details
+    $teacherId = auth()->user()->id;
+    $schoolId = auth()->user()->school_id;
+    // dd(GroupTeachers::where('teacher_id', $teacherId)->get(),$request->all());
+
+    $data['classes'] = Group::with(['groupTeachers', 'groupCourses'])
+    ->where('school_id', $schoolId)
+    ->whereHas('groupTeachers', function ($query) use ($teacherId) {
+        $query->where('teacher_id', $teacherId)->orWhere('co_teacher_id',$teacherId);
+    })
+    ->whereHas('groupCourses', function ($query) use ($request) {
+        // Try commenting out either 'program_id' or 'stage_id' conditions to see where the issue might lie
+        $query->where('program_id', $request->program_id);
+        //$query->where('stage_id', $request->stage_id); // Uncomment later to check
+    })
+    ->get();
+
+// dd($data['classes']); // Check if this returns anything
+
+    // Return the data
+    return $this->returnData('data', $data, "Teacher Classes");
+}
     /**
      * @OA\Post(
      *     path="/api/student_stats",

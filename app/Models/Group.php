@@ -46,4 +46,16 @@ class Group extends Model
     {
         return $this->hasMany(Assignment::class);
     }
+      public function groupTeachers()
+    {
+        return $this->hasMany(GroupTeachers::class, 'group_id');
+    }
+
+    /**
+     * Define a relationship with GroupCourses.
+     */
+    public function groupCourses()
+    {
+        return $this->hasMany(GroupCourse::class, 'group_id');
+    }
 }

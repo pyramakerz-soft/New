@@ -10,6 +10,10 @@ class Unit extends Model
     use HasFactory;
     protected $guarded = [];
 
+public function schoolUnits(){
+        return $this->hasMany(SchoolUnit::class , 'unit_id');
+    }
+    
     public function program()
     {
         return $this->belongsTo(Program::class, 'program_id');

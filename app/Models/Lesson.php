@@ -17,6 +17,10 @@ class Lesson extends Model
         'warmup_id',
         'unit_id',
     ];
+    
+    public function schoolLessons(){
+        return $this->hasMany(SchoolLesson::class , 'lesson_id');
+    }
     public function warmup()
     {
         return $this->belongsTo(Warmup::class, 'warmup_id');

@@ -171,78 +171,69 @@ class AuthController extends Controller
      *     )
      * )
      */
-    public function loginTeacher(Request $request)
-    {
-        $validate = Validator::make($request->all(), [
-            'email' => 'required',
-            'password' => 'required',
-            'role' => 'required',
-        ], [
-            'email.required' => __('app/validation.email_required'),
-            'password.required' => __('app/validation.password_required'),
-            'role.required' => __('app/validation.role_required')
-        ]);
+   public function loginTeacher(Request $request)
+{
+    $validate = Validator::make($request->all(), [
+        'email' => 'required',
+        'password' => 'required',
+        'role' => 'required',
+    ], [
+        'email.required' => __('app/validation.email_required'),
+        'password.required' => __('app/validation.password_required'),
+        'role.required' => __('app/validation.role_required')
+    ]);
 
-        if ($validate->fails()) {
-            $code = $this->returnCodeAccordingToInput($validate);
-            return $this->returnValidationError($code, $validate);
-        }
+    if ($validate->fails()) {
+        $code = $this->returnCodeAccordingToInput($validate);
+        return $this->returnValidationError($code, $validate);
+    }
 
-        $token = null;
-        if ($request->role == 1) {
-            if (User::where('role', 1)->where('email', $request->email)->count() > 0) {
-                if (!$token = JWTAuth::attempt($request->only('email', 'password'))) {
-                    return response()->json([
-                        "status" => false,
-                        "message" => "Wrong Email or password"
-                    ]);
-                }
-            } else {
+    $token = null;
+    if ($request->role == 1) {
+        if (User::where('role', 1)->where('email', $request->email)->count() > 0) {
+            if (!$token = JWTAuth::attempt($request->only('email', 'password'))) {
                 return response()->json([
                     "status" => false,
-                    "message" => "Wrong Email or password!"
+                    "message" => "Wrong Email or password"
                 ]);
             }
+        } else {
+            return response()->json([
+                "status" => false,
+                "message" => "Wrong Email or password!"
+            ]);
         }
-
-        $data['user'] = User::with(['school'])->where('email', $request->email)->first();
-        $loc = asset('storage/');
-        // $data['programs'] =  TeacherProgram::with(['program.units.lessons' , 'stage'])->where('teacher_id', $data['user']->id)->get();
-        $data['program_data'] = TeacherProgram::with(['program.units.lessons', 'stage'])
-            ->where('teacher_id', $data['user']->id)
-
-            ->get()
-            ->map(function ($teacherProgram) {
-                $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->stage->name;
-                $teacherProgram->image = $teacherProgram->program->image;
-        foreach ($teacherProgram->program->units as $unit) {
-            $unit->is_active = StudentLock::where('student_id', auth()->user()->id)
-                ->where('unit_id', $unit->id)
-                ->exists() ? 0 : 1;
-        }
-                return $teacherProgram;
-            });
-// $datas=User::with(['school', 'details.stage', 'teacher_programs'])->where('role', 1)->find(auth()->user()->id);
-// $data['program_data'] = TeacherResource::make($datas);
-        $data['token'] = $token;
-
-        return $this->returnData('data', $data, 'User Data to update');
-
-        // $data['programs'] = TeacherProgram::select()
-        //     ->join('programs', 'teacher_programs.program_id', 'programs.id')
-        //     ->join('courses', 'programs.course_id', 'courses.id')
-        //     ->groupBy('programs.id', 'courses.name', 'image')
-        //     ->where('teacher_id', $data['user']->id)
-        //     ->get();
-
-        // $data['grades'] = TeacherProgram::with(['stage'])
-        //     ->where('teacher_id', $data['user']->id)
-        //     ->get()
-        //     ->unique('stage.id')
-        //     ->values();
-
-
     }
+
+    $data['user'] = User::with(['school'])->where('email', $request->email)->first();
+    $loc = asset('storage/');
+
+    $data['program_data'] = TeacherProgram::with([
+        'program.units' => function($query) {
+            $query->where('is_active', 1); // Only get active units
+        }, 
+        'program.units.lessons', 
+        'stage'
+    ])
+    ->where('teacher_id', $data['user']->id)
+    ->whereHas('program', function ($query) {
+        $query->where('is_active', 1); // Only get active programs
+    })
+    ->get()
+    ->map(function ($teacherProgram) {
+        // Append program and stage name
+        $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->program->stage->name;
+        $teacherProgram->image = $teacherProgram->program->image;
+
+        // Units are already filtered by the query, no need to filter again
+        return $teacherProgram;
+    });
+
+    $data['token'] = $token;
+
+    return $this->returnData('data', $data, 'User Data to update');
+}
+
 
     /**
      * @OA\Get(

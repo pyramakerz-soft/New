@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\SchoolProgram;
 class Program extends Model
 {
     
@@ -18,6 +18,9 @@ class Program extends Model
     ];
     public function tests(){
         return $this->hasMany(Test::class , 'program_id');
+    }
+    public function schoolPrograms(){
+        return $this->hasMany(SchoolProgram::class , 'program_id');
     }
     public function test(){
         return $this->hasMany(Test::class , 'program_id');
