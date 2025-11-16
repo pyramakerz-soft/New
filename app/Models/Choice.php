@@ -15,5 +15,10 @@ class Choice extends Model
     {
         return $this->BelongsTo(Question::class);
     }
+    public function getImageAttribute($val)
+    {
+        return ($val !== null) ? asset('storage/choices/' . basename($val)) : "";
+
+    }
 
 }

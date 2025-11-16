@@ -24,6 +24,12 @@ class BeginningResource extends Resource
     protected static ?int $navigationSort = 11;
     protected static ?string $navigationIcon = 'heroicon-o-forward';
 
+
+public static function canViewAny(): bool
+    {
+        return false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form

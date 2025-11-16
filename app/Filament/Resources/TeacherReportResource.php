@@ -22,7 +22,10 @@ class TeacherReportResource extends Resource
     protected static ?string $navigationGroup = 'Report';
      
     public static ?string $label = 'Teachers';
-
+public static function canViewAny(): bool
+    {
+        return false;
+    }
 
     // public static $label = 'customer';
     protected static ?string $model = User::class;

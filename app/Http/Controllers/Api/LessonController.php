@@ -41,8 +41,7 @@ class LessonController extends Controller
     public function index($id)
     {
         // $units = Unit::all();
-        $data['lessons'] = Lesson::with(['game', 'game.gameTypes'])->where("unit_id", $id)->orderBy('number')->get();
-
+        $data['lessons'] = Lesson::with(['game', 'game.gameTypes','adaptiveGame','secAdaptiveGame'])->where("unit_id", $id)->where('is_active',1)->orderBy('number','asc')->get();
         $data['lessons']->each(function ($lesson) {
 
             $lesson->game = $lesson->game->sortBy('number');

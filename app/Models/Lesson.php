@@ -39,6 +39,14 @@ class Lesson extends Model
     {
         return $this->hasMany(Game::class);
     }
+    public function adaptiveGame(): HasMany
+    {
+        return $this->hasMany(Game::class,'adaptive_lesson_id');
+    }
+    public function secAdaptiveGame(): HasMany
+    {
+        return $this->hasMany(Game::class,'sec_adaptive_lesson_id');
+    }
         public function game_type(): HasMany
     {
         return $this->hasMany(GameType::class);

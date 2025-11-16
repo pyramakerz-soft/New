@@ -27,9 +27,9 @@ use Illuminate\Support\Facades\DB;
 class UnitResource extends Resource
 {
     protected static ?string $model = Unit::class;
-    protected static ?string $navigationGroup = 'Units';
+    protected static ?string $navigationGroup = 'Curriculum';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
@@ -55,6 +55,9 @@ class UnitResource extends Resource
                     ->preserveFilenames()
                     ->rules(['mimes:jpg,jpeg,png', 'max:10000'])
 
+                ,
+                Forms\Components\Toggle::make('is_active')
+                    ->required()
                 ,
                 Hidden::make('id'),
                 Forms\Components\TextInput::make('mob_unit_name')

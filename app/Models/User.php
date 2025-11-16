@@ -25,6 +25,7 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+        'parent_image',
     ];
 
     /**
@@ -93,11 +94,11 @@ class User extends Authenticatable implements JWTSubject
     }
     public function getImageAttribute($val)
     {
-        return ($val !== null) ? asset('uploads/users/' . $val) : "";
+        return ($val !== null) ? asset('uploads/profile_images/' . $val) : "";
     }
     public function getParentImageAttribute($val)
     {
-        return ($val !== null) ? asset('storage/profile_images/'. basename($val)) : "";
+        return ($val !== null) ? asset('profile_images/'. basename($val)) : "";
     }
     public function canAccessPanel(Panel $panel): bool
     {

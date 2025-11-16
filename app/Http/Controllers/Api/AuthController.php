@@ -105,7 +105,10 @@ class AuthController extends Controller
             ->get();
 
         $data['assignments'] = TeacherAssignmentResource::make($studentsDidAss);
-
+        $user = User::where('email',$request->email)->first();
+        $user->number_logins += 1;
+        $user->last_active = now();
+        $user->save();
         return $this->returnData('data', $data, 'User Data to update');
     }
 
@@ -230,7 +233,11 @@ class AuthController extends Controller
     });
 
     $data['token'] = $token;
+ $user = User::where('email',$request->email)->first();
+        $user->number_logins += 1;
+        $user->last_active = now();
 
+        $user->save();
     return $this->returnData('data', $data, 'User Data to update');
 }
 
@@ -261,9 +268,11 @@ class AuthController extends Controller
         $unreadCount = Notification::where('user_id', auth()->user()->id)
             ->where('is_read', 0)
             ->count();
+            $user = $data['user'];
+        $user->last_active = now();
+        $user->save();
         $data['user']->count = $unreadCount;
-
-
+        
         $data['assignments'] = TeacherAssignmentResource::make($studentsDidAss);
         return $this->returnData('data', $data, 'User Data');
     }
@@ -301,7 +310,9 @@ class AuthController extends Controller
                 "message" => "You are not a teacher!"
             ]);
         }
-
+        $user = $data;
+        $user->last_active = now();
+        $user->save();
         $data = TeacherResource::make($data);
         return $this->returnData('data', $data, 'Teacher Data');
     }

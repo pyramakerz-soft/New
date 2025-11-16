@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\LessonController;
 use App\Http\Controllers\Api\UnitsController;
+use App\Http\Controllers\Api\CheckController;
 use App\Http\Controllers\Api\TeachersController;
 use App\Http\Controllers\Api\GameController;
 
@@ -36,6 +37,7 @@ Route::group(['namespace' => 'Api', 'prefix' => 'auth'], function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/confirm-phone', [AuthController::class, 'confirmPhone']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::get("checkUpdate", [CheckController::class, "checkUpdate"])->name("checkUpdate");
     Route::group(['middleware' => 'auth:api'], function () {
         Route::post('/updateProfile', [AuthController::class, 'updateProfile']);
         Route::post('/makeParentPin', [AuthController::class, 'makeParentPin']);
@@ -82,6 +84,7 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::get('categories/{id}', [CategoryController::class, 'show']);
     Route::post('categories/{id}/all-data', [CategoryController::class, 'getAllCategoryData']);
     Route::post('/assignments', [AssignmentController::class, 'assign']);
+    
     Route::post('/notifications', [StudentController::class, 'getNotification']);
     Route::post('/finishAssignment', [StudentController::class, 'finishAssignment']);
 
@@ -92,6 +95,7 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post('/teach-mastery-report', [TeachersController::class, 'masteryReport']);
     Route::post('/teach-trials-report', [TeachersController::class, 'numOfTrialsReport']);
     Route::post('/teach-skill-report', [TeachersController::class, 'skillReport']);
+    
     /////////////////////// Classes Reports /////////////////////////////////
 
     Route::post('/class-comp-report', [TeachersController::class, 'classCompletionReport']);
@@ -99,3 +103,6 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post('/class-trials-report', [TeachersController::class, 'classNumOfTrialsReport']);
     Route::post('/class-skill-report', [TeachersController::class, 'classSkillReport']);
 });
+Route::post('/assignment-students/{id}', [AssignmentController::class, 'assignmentStudents']);
+    Route::post('/delete-assignment/{id}', [AssignmentController::class, 'deleteAssignment']);
+Route::post('games/duplicate', [\App\Http\Controllers\GameDuplicateController::class, 'duplicate']);

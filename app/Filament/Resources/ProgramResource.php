@@ -34,9 +34,9 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class ProgramResource extends Resource
 {
     protected static ?string $model = Program::class;
-    protected static ?string $navigationGroup = 'Programs';
+    protected static ?string $navigationGroup = 'Curriculum';
     protected static ?string $navigationIcon = 'heroicon-o-arrow-right-circle';
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
     public static function form(Form $form): Form
     {
         return $form
@@ -68,25 +68,25 @@ class ProgramResource extends Resource
                             }
                         };
                     }),
-                Forms\Components\Select::make('school_id')
-                    ->relationship('school', 'name')
-                    ->preload()
-                    ->required()
-                    ->createOptionForm([
-                        Forms\Components\TextInput::make('name')
-                            ->required()
-                            ->unique()
-                            ->maxLength(30),
-                    ])->rule(static function (Forms\Get $get, Forms\Components\Component $component): Closure {
-                        return static function (string $attribute, $value, Closure $fail) use ($get, $component) {
-                            $existingData = Program::where('school_id', $get('school_id'))->where('stage_id', $get('stage_id'))->where('course_id', $get('course_id'))->where('id', '!=', $get('id'))->first();
+                // Forms\Components\Select::make('school_id')
+                //     ->relationship('school', 'name')
+                //     ->preload()
+                //     ->required()
+                //     ->createOptionForm([
+                //         Forms\Components\TextInput::make('name')
+                //             ->required()
+                //             ->unique()
+                //             ->maxLength(30),
+                //     ])->rule(static function (Forms\Get $get, Forms\Components\Component $component): Closure {
+                //         return static function (string $attribute, $value, Closure $fail) use ($get, $component) {
+                //             $existingData = Program::where('school_id', $get('school_id'))->where('stage_id', $get('stage_id'))->where('course_id', $get('course_id'))->where('id', '!=', $get('id'))->first();
 
-                            if ($existingData) {
-                                // $number = ucwords($get('number'));
-                                $fail("The school  already exists .");
-                            }
-                        };
-                    }),
+                //             if ($existingData) {
+                //                 // $number = ucwords($get('number'));
+                //                 $fail("The school  already exists .");
+                //             }
+                //         };
+                //     }),
                 Forms\Components\Select::make('stage_id')
                     ->relationship('stage', 'name')
                     ->preload()

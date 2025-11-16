@@ -46,7 +46,19 @@ class PPTResource extends Resource
 
                     })
                     ->searchable(),
-                FileUpload::make('file_path')->label(' File')->nullable(),
+            Forms\Components\FileUpload::make('file_path')
+    ->label('File')
+    // ->required()
+    ->dehydrated(fn($state) => filled($state))
+    // ->required(fn(string $context): bool => $context == 'create')
+    ->dehydrated(true)
+    ->preserveFilenames()
+    // ->acceptedFileTypes(['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+    ->directory('ppt')  // Save files to public/storage/plans
+    ->disk('public')      // Use the public disk
+    ->dehydrateStateUsing(function ($state) {
+        return basename(trim(array_values($state)[0],'ppt/'));  // If it's a string, just return the file name
+    }),
                 Select::make('category_id')->relationship('category', 'name')->required(),
                 Select::make('file_type')->label('Type')
                     ->options([

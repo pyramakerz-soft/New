@@ -24,7 +24,7 @@ class LessonPlanResource extends Resource
 {
     protected static ?string $model = LessonPlan::class;
     protected static ?string $navigationGroup = 'Categories';
-
+protected static ?int $navigationSort = 6;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
@@ -47,16 +47,21 @@ class LessonPlanResource extends Resource
                 ->searchable(),
 
 
-                Forms\Components\FileUpload::make('file_path')
-                ->label('File')
-                    ->required()
-                    ->dehydrated(fn($state) => filled($state))
-                    ->required(fn(string $context): bool => $context == 'create')
-                    ->dehydrated(true)
-                    ->preserveFilenames()
-                    ->acceptedFileTypes(['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+             Forms\Components\FileUpload::make('file_path')
+    ->label('File')
+    ->required()
+    ->dehydrated(fn($state) => filled($state))
+    ->required(fn(string $context): bool => $context == 'create')
+    ->dehydrated(true)
+    ->preserveFilenames()
+    // ->acceptedFileTypes(['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+    ->directory('plans')  // Save files to public/storage/plans
+    ->disk('public')      // Use the public disk
+    ->dehydrateStateUsing(function ($state) {
+        return basename(trim(array_values($state)[0],'plans/'));  // If it's a string, just return the file name
+    })
 
-                ,
+,
 
                 Select::make('category_id')->relationship('category', 'name')->required(),
                 Select::make('file_type')->label('Type')

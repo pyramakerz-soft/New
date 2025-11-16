@@ -50,9 +50,16 @@ class GameImagesRelationManager extends RelationManager
     ->searchable()
     ->preload()
     ->required(),
+    Forms\Components\Select::make('gender')->label('Choose Gender (Optional)')->options(
+        [
+        'boy' => 'Boy',
+        'girl' => 'Girl'
+    ]
+    ),
 
                 Forms\Components\Toggle::make('correct')->required(),
                 Forms\Components\TextInput::make('word')->required(),
+                Forms\Components\TextInput::make('which'),
                 // Forms\Components\ViewField::make('image_select')
                 // ->view('Livewire.imageSelect')
                 // ->name('image_select')

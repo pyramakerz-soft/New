@@ -14,7 +14,18 @@ class Game extends Model
         'layout' => 'json',
         // 'audio_flag' => GameFlag::class,
     ];
-
+public function letters()
+    {
+        return $this->hasMany(GameLetter::class);
+    }
+     public function images()
+    {
+        return $this->hasMany(GameImage::class);
+    }
+     public function choices()
+    {
+        return $this->hasMany(Choice::class);
+    }
     public function prevGame()
     {
         return $this->belongsTo(Game::class, 'prev_game_id');
@@ -51,12 +62,28 @@ class Game extends Model
     {
         return $this->belongsTo(Lesson::class);
     }
+    public function adaptiveLesson()
+    {
+        return $this->belongsTo(Lesson::class,'adaptive_lesson_id');
+    }
+    public function secAdaptiveLesson()
+    {
+        return $this->belongsTo(Lesson::class,'sec_adaptive_lesson_id');
+    }
     public function studentDegrees()
     {
         return $this->hasMany(StudentDegree::class,'game_id');
     }
     
     public function getVideoAttribute($val)
+    {
+        return ($val !== null) ? asset('storage/' . $val) : "";
+    }
+    public function getGameVoiceAttribute($val)
+    {
+        return ($val !== null) ? asset('storage/' . $val) : "";
+    }
+    public function getBgImageAttribute($val)
     {
         return ($val !== null) ? asset('storage/' . $val) : "";
     }

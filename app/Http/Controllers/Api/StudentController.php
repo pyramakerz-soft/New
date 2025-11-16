@@ -100,10 +100,9 @@ class StudentController extends Controller
         $studentsDidAss = StudentTest::where('student_id', auth()->user()->id)->where('student_tests.status', 0)->where('student_tests.due_date', '>=', date('Y-m-d', strtotime(now())))->where('student_tests.start_date', '<=', date('Y-m-d', strtotime(now())))->get();
 
         $data = TeacherAssignmentResource::make($studentsDidAss);
-
         return $this->returnData('data', $data, "Student Assignments ");
     }
-    public function studentAssignmentsGames(Request $request)
+  public function studentAssignmentsGames(Request $request)
     {
         // $studentTest = StudentTest::where('student_id', auth()->user()->id)->select('test_id')->get();
         $studentsDidAss = StudentTest::where('student_tests.program_id', $request->program_id)
@@ -114,19 +113,32 @@ class StudentController extends Controller
         ->join('tests','student_tests.test_id','tests.id')
         ->join('programs', 'programs.id', 'student_tests.program_id')
         ->join('stages','programs.stage_id','stages.id')
-        ->select('student_tests.*','stages.mob_stage_name as stage_name')->get();
+        ->join('games','tests.game_id','games.id')
+        ->select('student_tests.*','stages.mob_stage_name as stage_name','tests.game_id as game_id','games.audio_flag as audio_flag')->get();
+        // dd($studentsDidAss->pluck('audio_flag'))
         // dd($studentsDidAss);
-
-        $testQuestions = TestQuestion::whereIn('test_id', $studentsDidAss->pluck('test_id'))->with(['game.gameImages', 'game.gameLetters', 'game.gameTypes','game.gameChoices','game.lesson.unit.program.course'])
+// dd($studentsDidAss->pluck('game_id'));
+        $testQuestions = TestQuestion::whereIn('test_questions.test_id', $studentsDidAss->pluck('test_id'))->with(['game.gameImages', 'game.gameLetters', 'game.gameTypes','game.gameChoices','game.lesson.unit.program.course'])
         ->join('tests','test_questions.test_id','tests.id')
         ->join('programs', 'programs.id', 'tests.program_id')
         ->join('stages','programs.stage_id','stages.id')
+        ->join('games','tests.game_id','games.id')
+        
         ->select('test_questions.*','stages.mob_stage_name as stage_name')
         ->get();
-
+        // dd($testQuestions);
         $arr = [];
         $games = [];
     $i=0;
+    $r_test = StudentTest::find($request->test_id)->test_id;
+   
+    $game = Game::with('gameTypes')->find(Test::find($r_test)->game_id);
+    $tst = Test::find($r_test);
+    $lesson_idsaa = $tst->lesson_id;
+    $lesson_selected = Lesson::find($lesson_idsaa);
+// dd($game);
+    $gameTypeName = $game->gameTypes->name;
+    $gender = User::find(StudentTest::find($request->test_id)->student_id)->gender;
         foreach ($testQuestions as $question) {
             $arr[] = $question;
             if ($question->game) {
@@ -138,8 +150,71 @@ class StudentController extends Controller
                 
             }
         }
-        $studentAssignGames = $games;
+        $j = 0;
+        foreach($games as $g){
+            if($g->audio_flag != $studentsDidAss->pluck('audio_flag')[0]){
+                unset($games[$j]);
+            }
+            $j++;
+        }
+         if ($gameTypeName == 'Choose_Gender' || $gameTypeName == 'Drag Clothes' ) {
+            foreach ($games as $game) {
+                $game->correct_ans = $gender;
+                
+                foreach($game->gameImages as $img){
+                    
+                    if($img->gender && $img->gender == $gender){
+                    $img->correct = 1;
+                    }else{
+                        
+                    $img->correct = 0;
+                        
+                    }
+                }
+            }
+        }
+        // Build the final list
+$studentAssignGames = array_values($games);
 
+// ── NORMALIZE lesson relation for adaptive games ──────────────────────────────
+$idsToHydrate = [];
+
+foreach ($studentAssignGames as $g) {
+    $effectiveLessonId = null;
+
+    if ($lesson_selected && $lesson_selected->adaptive_flag == 1) {
+        $effectiveLessonId = $g->adaptive_lesson_id ?: $g->sec_adaptive_lesson_id;
+    } else {
+        $effectiveLessonId = $g->lesson_id
+            ?: $g->adaptive_lesson_id
+            ?: $g->sec_adaptive_lesson_id;
+    }
+
+    if ($effectiveLessonId && $g->lesson_id != $effectiveLessonId) {
+        $g->setAttribute('lesson_id', $effectiveLessonId);
+        $idsToHydrate[] = $effectiveLessonId;
+    }
+}
+
+// Bulk hydrate all effective lessons with their chain
+if (!empty($idsToHydrate)) {
+    $lessons = Lesson::with(['unit.program.course'])
+        ->whereIn('id', array_unique($idsToHydrate))
+        ->get()
+        ->keyBy('id');
+
+    foreach ($studentAssignGames as $g) {
+        if ($g->lesson_id && $lessons->has($g->lesson_id)) {
+            $g->setRelation('lesson', $lessons[$g->lesson_id]);
+        }
+    }
+}
+// ── END NORMALIZE ─────────────────────────────────────────────────────────────
+
+
+return $this->returnData('data', $studentAssignGames, "Student Assignments ");
+
+        // dd($games,$studentsDidAss->pluck('audio_flag')[0]);
         return $this->returnData('data', $studentAssignGames, "Student Assignments ");
     }
 
@@ -158,63 +233,65 @@ class StudentController extends Controller
      */
   public function studentPrograms()
 {
-    // Set the timezone to Egypt (Cairo)
     $currentDate = Carbon::now()->setTimezone('Africa/Cairo');
-    $todayStart = $currentDate->copy()->startOfDay()->toDateTimeString();
-    $todayEnd = $currentDate->copy()->endOfDay()->toDateTimeString();
+    $todayStart  = $currentDate->copy()->startOfDay()->toDateTimeString();
+    $todayEnd    = $currentDate->copy()->endOfDay()->toDateTimeString();
+
+    $userId = auth()->id();
 
     $data['programs'] = User::with([
         'userCourses.program',
         'userCourses.program.course',
-        'userCourses.program.student_tests' => function ($query) use ($todayStart, $todayEnd) {
-            $query->where('student_id', auth()->user()->id)
-                ->where('status', 0)
-                ->where('start_date', '<=', $todayEnd)
-                ->where('due_date', '>=', $todayStart);
+        'userCourses.program.student_tests' => function ($query) use ($userId, $todayStart, $todayEnd) {
+            $query->where('student_id', $userId)
+                  ->where('status', 0)
+                  ->where('start_date', '<=', $todayEnd)
+                  ->where('due_date', '>=', $todayStart)
+                  ->with('tests'); // preload tests so we can check stage/program
         },
     ])
-    ->where('id', auth()->user()->id)
+    ->where('id', $userId)
     ->first();
 
-    // Iterate through each user course and program to update course name with stage
-    $data['programs']->userCourses->each(function ($userCourse) {
+    $data['programs']->userCourses->each(function ($userCourse) use ($userId) {
         $program = $userCourse->program;
 
-        // Ensure student tests are filtered correctly
+        // Filter tests by student, not expired, AND stage match
         $program->student_tests = $program->student_tests
-            ->where('status', '!=', 1)
-            ->where('student_id', auth()->user()->id);
+        ->where('status', '!=', 1)
+        ->where('student_id', auth()->id())
+        ->filter(function ($st) use ($program) {
+            $test = $st->tests; // relation eager-loaded
+            return $test 
+                && $test->program_id == $program->id 
+                && $test->stage_id   == $program->stage_id;
+        })
+        ->values();
 
-        // Fetch the related stage name based on stage_id
-        $stage = Stage::find($program->stage_id);
-        if ($stage) {
-            $stageName = $stage->name;
-
-            // Clone the course object to avoid affecting other programs
+        // Append stage name to course
+        if ($program->stage_id && ($stage = Stage::find($program->stage_id))) {
             $newCourse = clone $program->course;
-            $newCourse->name .= ' ' . $stageName;
-
-            // Set the modified course back to the program
+            $newCourse->name .= ' ' . $stage->name;
             $program->setRelation('course', $newCourse);
         }
-        // $userCourse->program->stage_id = UserDetails::where('user_id',auth()->user()->id)->first()->stage_id;
-        // Update assignment names in student tests
-        if (isset($program->student_tests[0])) {
-            foreach ($program->student_tests as $test) {
-                $test->assignment_name = Test::find($test->test_id)->name;
-            }
+
+        // Update assignment_name for each student test
+        foreach ($program->student_tests as $test) {
+            $test->assignment_name = optional($test->tests)->name ?? '-';
         }
     });
 
     $data['test_types'] = TestTypes::all();
-    $data['count'] = StudentTest::where('student_id', auth()->user()->id)
-        ->where('status', '=', '0')
+
+    $data['count'] = StudentTest::where('student_id', $userId)
+        ->where('status', 0)
         ->where('due_date', '>=', $todayStart)
         ->where('start_date', '<=', $todayEnd)
         ->count();
 
     return $this->returnData('data', $data, "All groups for the student");
 }
+
     public function getNotification(Request $request)
     {
         $request->validate([
@@ -434,7 +511,6 @@ class StudentController extends Controller
 
         // Execute the query
         $tests = $query->orderBy('due_date', 'DESC')->get();
-
         // Calculate status counts
         $totalTests = $tests->count();
 
@@ -445,11 +521,16 @@ class StudentController extends Controller
         $user_id = auth()->user()->id;
 
         $courses = DB::table('user_courses')
-            ->join('programs', 'user_courses.program_id', '=', 'programs.id')
-            ->join('courses', 'programs.course_id', '=', 'courses.id')
-            ->where('user_courses.user_id', $user_id)
-            ->select('programs.id as program_id', 'courses.name as course_name')
-            ->get();
+    ->join('programs', 'user_courses.program_id', '=', 'programs.id')
+    ->join('courses', 'programs.course_id', '=', 'courses.id')
+    ->leftJoin('stages', 'programs.stage_id', '=', 'stages.id')
+    ->where('user_courses.user_id', $user_id)
+    ->select(
+        'programs.id as program_id',
+        DB::raw("CONCAT(stages.name, ' ', courses.name) as course_name")
+    )
+    ->get();
+
 
         // Add the "all programs" entry
         $allProgramsEntry = (object) [

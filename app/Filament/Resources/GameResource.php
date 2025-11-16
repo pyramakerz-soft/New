@@ -8,6 +8,7 @@ use App\Filament\Resources\GameResource\RelationManagers\AssignmentsRelationMana
 use App\Filament\Resources\GameResource\RelationManagers\GameImagesRelationManager;
 use App\Filament\Resources\GameResource\RelationManagers\GameLettersRelationManager;
 use App\Filament\Resources\GameResource\RelationManagers\GameChoicesRelationManager;
+use Filament\Forms\Components\FileUpload;
 use App\Models\Game;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -24,7 +25,7 @@ class GameResource extends Resource
     protected static ?string $model = Game::class;
     protected static ?string $navigationGroup = 'Games';
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
-    protected static ?int $navigationSort = 12;
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {
@@ -35,9 +36,11 @@ class GameResource extends Resource
                 Forms\Components\Toggle::make('is_active')
                     ->required()
                 ,
-                Forms\Components\TextInput::make('number')->label('Index of Ordering')
+                Forms\Components\TextInput::make('number')->label('Index of Ordering')->numeric(),
+                Forms\Components\TextInput::make('adaptive_order')->label('Index of Ordering adaptive')->numeric(),
+                Forms\Components\TextInput::make('sec_adaptive_order')->label('Index of Ordering adaptive sec')->numeric(),
 
-                    ->numeric(),
+                    
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(150),
@@ -45,8 +48,18 @@ class GameResource extends Resource
 
 
                 Forms\Components\Select::make('lesson_id')
-                    ->required()
                     ->relationship('lesson', 'name')
+                    ->preload()
+                    ->searchable(),
+                    
+                Forms\Components\Select::make('adaptive_lesson_id')
+                    ->relationship('adaptiveLesson', 'name')
+                    ->label('Adaptive Lesson')
+                    ->preload()
+                    ->searchable(),
+                Forms\Components\Select::make('sec_adaptive_lesson_id')
+                    ->relationship('secAdaptiveLesson', 'name')
+                    ->label('Second Adaptive Lesson')
                     ->preload()
                     ->searchable(),
 
@@ -141,10 +154,20 @@ class GameResource extends Resource
                     ->default(50),
                 Forms\Components\TextInput::make('correct_ans')->label('Correct Answer'),
                 Forms\Components\TextInput::make('sentence')->label('Sentence'),
-                 Forms\Components\FileUpload::make('video')
+                FileUpload::make('game_voice')
+                    ->label('Game Voice')
+                    ->nullable()
+                    ->disk('public'),
+                    Forms\Components\Toggle::make('voice_flag')
+                    ->required()
+                ,
+                FileUpload::make('video')
+    ->label('Story')
+    ->nullable()
+    ->disk('public'),
+                 Forms\Components\FileUpload::make('bg_image')
                     ->preserveFilenames()
-                    ->maxSize(2048000)
-                    ->acceptedFileTypes(['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/mkv', 'video/webm']),
+                    ->maxSize(2048000),
             ]);
     }
 

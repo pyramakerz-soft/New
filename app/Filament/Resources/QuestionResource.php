@@ -43,7 +43,10 @@ class QuestionResource extends Resource
 
     protected static ?int $navigationSort = 11;
     public $valueAdded = false;
-
+public static function canViewAny(): bool
+    {
+        return false;
+    }
 
     public static function form(Form $form): Form
     {

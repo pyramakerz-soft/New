@@ -27,7 +27,10 @@ class QuestionBankResource extends Resource
 
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
+public static function canViewAny(): bool
+    {
+        return false;
+    }
     public static function form(Form $form): Form
     {
         return $form

@@ -21,7 +21,10 @@ class StudentResource extends Resource
     protected static ?string $navigationGroup = 'Report';
     protected static ?string $model = User::class;
     public static ?string $label = 'Students';
-
+public static function canViewAny(): bool
+    {
+        return false;
+    }
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form

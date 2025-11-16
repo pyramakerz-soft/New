@@ -10,6 +10,7 @@ use Filament\Forms;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -24,7 +25,7 @@ class EbookResource extends Resource
 {
     protected static ?string $model = Ebook::class;
     protected static ?string $navigationGroup = 'Categories';
-
+protected static ?int $navigationSort = 6;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
@@ -32,6 +33,11 @@ class EbookResource extends Resource
         return $form
             ->schema([
                 TextInput::make('title')->required(),
+                FileUpload::make('file_path')
+    ->label(' File')
+    ->nullable()
+    ->directory('uploads/zips') // Define the upload directory
+    ->disk('public'), // Use the public disk
                 Forms\Components\Select::make('unit_id')->label('Unit')
                     ->relationship('unit', 'name')
                     ->required()

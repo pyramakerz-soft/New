@@ -22,7 +22,10 @@ class WarmupResource extends Resource
     protected static ?string $navigationGroup = 'Lessons';
     protected static ?string $navigationIcon = 'heroicon-o-arrow-path';
     protected static ?int $navigationSort = 8;
-
+public static function canViewAny(): bool
+    {
+        return false;
+    }
     public static function form(Form $form): Form
     {
         return $form

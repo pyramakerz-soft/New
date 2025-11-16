@@ -23,6 +23,10 @@ class TestResource extends Resource
 protected static ?string $title = 'Exam';
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
     protected static ?int $navigationSort = 10;
+    public static function canViewAny(): bool
+    {
+        return false;
+    }
     public static function form(Form $form): Form
     {
         return $form

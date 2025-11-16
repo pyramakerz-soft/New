@@ -23,6 +23,6 @@ class LessonPlan extends Model
     }
     public function getFilePathAttribute($val)
     {
-        return ($val !== null) ? asset('storage/' . $val) : null;
+        return ($val !== null) ? asset('storage/plans/' . $val) : null;
     }
 }

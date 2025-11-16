@@ -27,7 +27,10 @@ class CheckpointResource extends Resource
     protected static ?int $navigationSort = 9;
     protected static ?string $navigationGroup = 'Lessons';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
+public static function canViewAny(): bool
+    {
+        return false;
+    }
     public static function form(Form $form): Form
     {
         return $form

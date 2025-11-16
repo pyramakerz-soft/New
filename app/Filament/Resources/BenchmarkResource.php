@@ -24,7 +24,10 @@ class BenchmarkResource extends Resource
     protected static ?int $navigationSort = 12;
     protected static ?string $navigationGroup = 'Programs';
     protected static ?string $navigationIcon = 'heroicon-o-stop-circle';
-
+public static function canViewAny(): bool
+    {
+        return false;
+    }
     public static function form(Form $form): Form
     {
         return $form

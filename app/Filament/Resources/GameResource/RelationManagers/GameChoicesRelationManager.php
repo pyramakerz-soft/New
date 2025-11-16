@@ -18,6 +18,17 @@ class GameChoicesRelationManager extends RelationManager
     {
         return $form
             ->schema([
+                Forms\Components\FileUpload::make('image')
+                    ->nullable()
+
+                    ->preserveFilenames()
+
+                    ->disk('public')
+                    ->directory('choices')
+                ,
+                Forms\Components\TextInput::make('which')
+                    ->columnSpanFull()
+                    ->maxLength(255),
                 Forms\Components\TextInput::make('choice')
                     ->required()
                     ->columnSpanFull()

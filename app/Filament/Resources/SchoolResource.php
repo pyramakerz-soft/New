@@ -18,7 +18,7 @@ class SchoolResource extends Resource
     protected static ?string $model = School::class;
     // protected static ?string $navigationParentItem = 'Starter';
     public static function canViewAny(): bool{
-        return true;
+        return false;
     }
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
     protected static ?string $navigationGroup = 'Starter';

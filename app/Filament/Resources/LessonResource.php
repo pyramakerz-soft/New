@@ -20,10 +20,10 @@ use Illuminate\Support\Facades\DB;
 class LessonResource extends Resource
 {
     protected static ?string $model = Lesson::class;
-    protected static ?string $navigationGroup = 'Lessons';
+    protected static ?string $navigationGroup = 'Curriculum';
 
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
     {
@@ -65,6 +65,11 @@ class LessonResource extends Resource
                 ,
                 Forms\Components\TextInput::make('mob_lesson_name')
                     ->maxLength(65535)
+                ,
+                Forms\Components\Toggle::make('is_active')
+                    ->required()
+                ,
+                Forms\Components\Toggle::make('adaptive_flag')
                 ,
                 Forms\Components\TextInput::make('number')
                     ->required()

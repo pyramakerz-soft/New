@@ -70,7 +70,7 @@ return [
     |
     */
 
-    'timezone' => 'Africa/Cairo',
+    'timezone' => 'UTC',
 
     /*
     |--------------------------------------------------------------------------
@@ -171,7 +171,6 @@ return [
         App\Providers\Filament\SchoolPanelProvider::class,
         App\Providers\Filament\TeacherPanelProvider::class,
         App\Providers\RouteServiceProvider::class,
-        L5Swagger\L5SwaggerServiceProvider::class,
     ])->toArray(),
 
     /*
