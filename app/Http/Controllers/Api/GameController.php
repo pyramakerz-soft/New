@@ -267,8 +267,8 @@ if ($gameTypeName === 'Choose_Gender' || $gameTypeName === 'Drag Clothes') {
         $game = Game::find($request->game_id);
         $game->stars = $request->stars;
         $game->save();
-        
-        
+
+
         return $this->returnData('data', $game, "Game Completed");
     }
 
@@ -323,7 +323,7 @@ public function solveData(Request $request)
             continue;
         }
 
-        $lesson = $this->resolveLessonForGame($game, $programId);
+        $lesson = $request->lesson_id;
         if (!$lesson) {
             // Without a lesson we can't attribute progress
             continue;
@@ -333,6 +333,7 @@ public function solveData(Request $request)
         $degree = StudentDegree::firstOrNew([
             'student_id' => $studentId,
             'game_id'    => $game_id,
+            'lesson_id'=> $lesson,
         ]);
         $degree->lesson_id = $lesson->id;
         $degree->stars     = $request->stars; // assuming numeric or numeric string
