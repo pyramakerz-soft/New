@@ -104,6 +104,7 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post('/class-skill-report', [TeachersController::class, 'classSkillReport']);
     Route::post('/assignment-students/{id}', [AssignmentController::class, 'assignmentStudents']);
     Route::post('/delete-assignment/{id}', [AssignmentController::class, 'deleteAssignment']);
-    Route::post('games/duplicate', [\App\Http\Controllers\GameDuplicateController::class, 'duplicate']);
+    // Route::post('games/duplicate', [\App\Http\Controllers\GameDuplicateController::class, 'duplicate']);
 });
 
+Route::post('/upload-audio', [GameController::class, 'uploadAudio']);

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Game;
 use App\Models\GameType;
+use App\Models\GameImage;
+use App\Models\GameLetter;
 use App\Models\StudentDegree;
 use App\Models\UserDetails;
 use App\Models\Lesson;
@@ -432,6 +434,90 @@ class GameController extends Controller
         return reset($candidates) ?: null;
     }
 
+    /**
+     * Upload audio file and update database tables
+     * 
+     * Accepts audio file, table name (game_images or game_letters), and record_id
+     * Updates the voice column in the specified table and sets voice_flag=1 in games table
+     */
+    public function uploadAudio(Request $request)
+    {
+        // 1. Validate the request
+        $validated = $request->validate([
+            'audio' => 'required|file|mimes:mp3,wav,ogg,m4a,flac|max:10240', // 10MB max
+            'table' => 'required|in:game_images,game_letters',
+            'record_id' => 'required|integer|min:1'
+        ]);
+
+        try {
+            // 2. Store the audio file
+            $file = $request->file('audio');
+            $fileName = $file->getClientOriginalName();
+            $filePath = $file->storeAs('audio', $fileName, 'public');
+            $fileUrl = asset('storage/' . $filePath);
+
+            // 3. Update the appropriate table based on the 'table' parameter
+            $table = $validated['table'];
+            $recordId = $validated['record_id'];
+
+            if ($table === 'game_images') {
+                $record = GameImage::find($recordId);
+
+                if (!$record) {
+                    // Clean up uploaded file if record not found
+                    \Storage::disk('public')->delete($filePath);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Record not found in game_images table',
+                        'errors' => ['record_id' => ["No record found with ID {$recordId}"]]
+                    ], 404);
+                }
+
+                $record->voice = $fileUrl;
+                $record->save();
+                $gameId = $record->game_id;
+
+            } else { // game_letters
+                $record = GameLetter::find($recordId);
+
+                if (!$record) {
+                    // Clean up uploaded file if record not found
+                    \Storage::disk('public')->delete($filePath);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Record not found in game_letters table',
+                        'errors' => ['record_id' => ["No record found with ID {$recordId}"]]
+                    ], 404);
+                }
+
+                $record->voice = $fileUrl;
+                $record->save();
+                $gameId = $record->game_id;
+            }
+
+            // 4. Update the games table to set voice_flag = 1
+            if ($gameId) {
+                Game::where('id', $gameId)->update(['voice_flag' => 1]);
+            }
+
+            // 5. Return success response
+            return response()->json([
+                'success' => true,
+                'url' => $fileUrl,
+                'message' => 'Audio uploaded and database updated successfully',
+                'game_id' => $gameId,
+                'record_id' => $recordId,
+                'table' => $table
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while uploading the audio',
+                'errors' => ['exception' => [$e->getMessage()]]
+            ], 500);
+        }
+    }
 
 
 }
