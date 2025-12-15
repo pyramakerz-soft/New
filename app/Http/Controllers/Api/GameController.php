@@ -474,6 +474,7 @@ class GameController extends Controller
                 }
 
                 $record->voice = $fileUrl;
+                $record->is_run = 1;
                 $record->save();
                 $gameId = $record->game_id;
 
