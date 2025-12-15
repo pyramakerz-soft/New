@@ -29,37 +29,37 @@ class LessonResource extends JsonResource
                 ->concat($data->relationLoaded('adaptiveGame') ? $data->adaptiveGame : collect())
                 ->concat($data->relationLoaded('secAdaptiveGame') ? $data->secAdaptiveGame : collect())
                 ->values(); // reindex keys
-                // after: $games = (...) ->values();  // reindex keys
+            // after: $games = (...) ->values();  // reindex keys
 
-$lessonId = (int) ($data->id ?? 0);
+            $lessonId = (int) ($data->id ?? 0);
 
-$games = $games->sortBy(function ($g) use ($lessonId) {
-    // numeric-or-null → int, with "null last"
-    $nn = function ($v, $fallback = 999999999) {
-        return is_numeric($v) ? (int) $v : $fallback;
-    };
+            $games = $games->sortBy(function ($g) use ($lessonId) {
+                // numeric-or-null → int, with "null last"
+                $nn = function ($v, $fallback = 999999999) {
+                    return is_numeric($v) ? (int) $v : $fallback;
+                };
 
-    // Determine which pointer matches this lesson, assign a priority bucket
-    if ((int) $g->adaptive_lesson_id === $lessonId) {
-        $priority = 0;
-        $primary  = $nn($g->adaptive_order, $nn($g->number, $g->id));
-    } elseif ((int) $g->sec_adaptive_lesson_id === $lessonId) {
-        $priority = 1;
-        $primary  = $nn($g->sec_adaptive_order, $nn($g->number, $g->id));
-    } elseif ((int) $g->lesson_id === $lessonId) {
-        $priority = 2;
-        $primary  = $nn($g->number, $g->id);
-    } else {
-        $priority = 3;
-        $primary  = $nn($g->id);
-    }
+                // Determine which pointer matches this lesson, assign a priority bucket
+                if ((int) $g->adaptive_lesson_id === $lessonId) {
+                    $priority = 0;
+                    $primary = $nn($g->adaptive_order, $nn($g->number, $g->id));
+                } elseif ((int) $g->sec_adaptive_lesson_id === $lessonId) {
+                    $priority = 1;
+                    $primary = $nn($g->sec_adaptive_order, $nn($g->number, $g->id));
+                } elseif ((int) $g->lesson_id === $lessonId) {
+                    $priority = 2;
+                    $primary = $nn($g->number, $g->id);
+                } else {
+                    $priority = 3;
+                    $primary = $nn($g->id);
+                }
 
-    // tie-breaker by id for stable ordering
-    $secondary = $nn($g->id);
+                // tie-breaker by id for stable ordering
+                $secondary = $nn($g->id);
 
-    // return a sortable key; zero-pad to keep lexicographic order correct
-    return sprintf('%02d-%010d-%010d', $priority, $primary, $secondary);
-})->values();
+                // return a sortable key; zero-pad to keep lexicographic order correct
+                return sprintf('%02d-%010d-%010d', $priority, $primary, $secondary);
+            })->values();
 
 
             $gamesWithStars = [];
@@ -73,8 +73,9 @@ $games = $games->sortBy(function ($g) use ($lessonId) {
 
                 // avoid repeated where() calls
                 $degree = optional($game->studentDegrees)
-                    ?->where('student_id', auth()->id())
+                        ?->where('student_id', auth()->id())
                     ->where('game_id', $game->id)
+                    ->where('lesson_id', $data->id)
                     ->first();
 
                 $stars = (int) ($degree->stars ?? 0);
