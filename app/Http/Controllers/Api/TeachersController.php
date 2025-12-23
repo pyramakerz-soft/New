@@ -58,7 +58,7 @@ class TeachersController extends Controller
      */
     public function teacherAssignments()
     {
-        $studentsDidAss = StudentTest::where('teacher_id', auth()->user()->id)->where('due_date', '>=', date('Y-m-d', strtotime(now())))->orderBy('due_date', 'ASC')->where('start_date','>=',Carbon::parse(now())->startOfDay())->get();
+        $studentsDidAss = StudentTest::where('teacher_id', auth()->user()->id)->where('due_date', '>=', date('Y-m-d', strtotime(now())))->orderBy('due_date', 'ASC')->get();
         $data = TeacherAssignmentResource::make($studentsDidAss);
         return $this->returnData('data', $data, "Teacher Assignments ");
     }
@@ -338,26 +338,26 @@ class TeachersController extends Controller
      *     )
      * )
      */
-   public function teacherClasses(Request $request)
-{
+    public function teacherClasses(Request $request)
+    {
 
-    $teacherId = auth()->user()->id;
-    $schoolId = auth()->user()->school_id;
-    // dd(GroupTeachers::where('teacher_id', $teacherId)->get(),$request->all());
+        $teacherId = auth()->user()->id;
+        $schoolId = auth()->user()->school_id;
+        // dd(GroupTeachers::where('teacher_id', $teacherId)->get(),$request->all());
 
-    $data['classes'] = Group::with(['groupTeachers', 'groupCourses'])
-    ->where('school_id', $schoolId)
-    ->whereHas('groupTeachers', function ($query) use ($teacherId) {
-        $query->where('teacher_id', $teacherId)->orWhere('co_teacher_id',$teacherId);
-    })
-    ->whereHas('groupCourses', function ($query) use ($request) {
-        $query->where('program_id', $request->program_id);
-    })
-    ->get();
+        $data['classes'] = Group::with(['groupTeachers', 'groupCourses'])
+            ->where('school_id', $schoolId)
+            ->whereHas('groupTeachers', function ($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId)->orWhere('co_teacher_id', $teacherId);
+            })
+            ->whereHas('groupCourses', function ($query) use ($request) {
+                $query->where('program_id', $request->program_id);
+            })
+            ->get();
 
 
-    return $this->returnData('data', $data, "Teacher Classes");
-}
+        return $this->returnData('data', $data, "Teacher Classes");
+    }
     /**
      * @OA\Post(
      *     path="/api/student_stats",
@@ -451,23 +451,23 @@ class TeachersController extends Controller
     {
         // Initialize query builder
         $query = StudentTest::with('tests')->where('student_id', $request->student_id);
- 
+
         if ($query->get()->isEmpty())
-            return $this->returnData2('data',[], 'No reports are available for this student at the moment.');
+            return $this->returnData2('data', [], 'No reports are available for this student at the moment.');
 
         // if (!StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()) {
         //     return $this->returnData2('data', [],'No reports are available for this student at the moment.');
         // }
-        if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first())))
-        if(isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)){
-        $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
-        $latest = Game::find($latest_game)->lesson_id;
-        $latest_lesson = Lesson::find($latest)->name ;
-        $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
-        
-        $data['student_latest'] = $latest_unit . " " . $latest_lesson;
-        }else
-        $daata['student_latest'] = '-';
+        if ((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first())))
+            if (isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)) {
+                $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
+                $latest = Game::find($latest_game)->lesson_id;
+                $latest_lesson = Lesson::find($latest)->name;
+                $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
+
+                $data['student_latest'] = $latest_unit . " " . $latest_lesson;
+            } else
+                $daata['student_latest'] = '-';
         if ($request->filled('future') && $request->future != NULL) {
             if ($request->future == 1) {
                 // No additional conditions needed
@@ -487,10 +487,10 @@ class TeachersController extends Controller
                 ->where(function ($query) use ($fromDate, $toDate) {
                     $query->whereBetween('start_date', [$fromDate, $toDate]);
                 });
-                
-                if($query->get()->isEmpty())
-            return $this->returnError('404', 'No reports found for the selected date range.');
-        
+
+            if ($query->get()->isEmpty())
+                return $this->returnError('404', 'No reports found for the selected date range.');
+
         }
 
 
@@ -561,9 +561,9 @@ class TeachersController extends Controller
             'pending' => $pendingCount,
         ];
         $data['assignments_percentages'] = [
-            'completed' => round($finishedPercentage,2),
-            'overdue' => round($overduePercentage,2),
-            'pending' => round($pendingPercentage,2),
+            'completed' => round($finishedPercentage, 2),
+            'overdue' => round($overduePercentage, 2),
+            'pending' => round($pendingPercentage, 2),
         ];
         $data['tests'] = StudentAssignmentResource::make($tests);
         $data['test_types'] = TestResource::make($test_types);
@@ -593,10 +593,10 @@ class TeachersController extends Controller
     {
         // Retrieve student progress for the given student and program
         $query = StudentProgress::where('student_id', $request->student_id)
-            ->where('program_id', $request->program_id)->where('is_done',1);
+            ->where('program_id', $request->program_id)->where('is_done', 1);
 
         if ($query->get()->isEmpty())
-            return $this->returnData('data',[], 'No reports are available for this student at the moment.');
+            return $this->returnData('data', [], 'No reports are available for this student at the moment.');
         // Apply filters if provided
         if ($request->has('unit_id')) {
             $query->where('unit_id', $request->unit_id);
@@ -629,24 +629,24 @@ class TeachersController extends Controller
         $gamesMastery = [];
         $skillsMastery = [];
         $gameTypesMastery = [];
-if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))){
-       if(isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)){
-        $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
-        $latest = Game::find($latest_game)->lesson_id;
-        $latest_lesson = Lesson::find($latest)->name ;
-        $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
-        
-        $data['student_latest'] = $latest_unit . " " . $latest_lesson;
-        }else{
-        $data['student_latest'] = '-';
-            $latest_unit ='-';
-            $latest_lesson ='-';
+        if ((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))) {
+            if (isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)) {
+                $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
+                $latest = Game::find($latest_game)->lesson_id;
+                $latest_lesson = Lesson::find($latest)->name;
+                $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
+
+                $data['student_latest'] = $latest_unit . " " . $latest_lesson;
+            } else {
+                $data['student_latest'] = '-';
+                $latest_unit = '-';
+                $latest_lesson = '-';
+            }
+
+        } else {
+            $latest_unit = '-';
+            $latest_lesson = '-';
         }
-    
-}else{
-     $latest_unit ='-';
-            $latest_lesson ='-';
-}
         // Process each progress record
         foreach ($student_progress as $progress) {
             // Retrieve the test and its related game, game type, and skills
@@ -673,7 +673,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
                     'total_score' => 0,
                     'mastery_percentage' => 0,
                     'lessons' => [],
-                    'latest_prog' => $latest_unit . " " . $latest_lesson 
+                    'latest_prog' => $latest_unit . " " . $latest_lesson
                 ];
             }
 
@@ -683,9 +683,9 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
                     'lesson_id' => $progress->lesson_id,
                     'name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name . " | " . Lesson::find($progress->lesson_id)->name,
                     'unit_name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name,
-                    'lesson_name' =>  Lesson::find($progress->lesson_id)->name,
-                    'unit_index' => "U".Unit::find(Lesson::find($progress->lesson_id)->unit_id)->number,
-                    'lesson_index' =>  "L".Lesson::find($progress->lesson_id)->number,
+                    'lesson_name' => Lesson::find($progress->lesson_id)->name,
+                    'unit_index' => "U" . Unit::find(Lesson::find($progress->lesson_id)->unit_id)->number,
+                    'lesson_index' => "L" . Lesson::find($progress->lesson_id)->number,
                     'failed' => 0,
                     'introduced' => 0,
                     'practiced' => 0,
@@ -699,15 +699,15 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
             }
 
 
- if(Program::join('courses','programs.course_id','courses.id')->where('programs.id',$progress->program_id)->select('courses.name')->first()->name == 'Arabic'){
-                if($gameName = GameType::find($test->game->game_type_id)->name_ar)
-               $gameName = GameType::find($test->game->game_type_id)->name_ar ?? '-';
-               else
-               $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
+            if (Program::join('courses', 'programs.course_id', 'courses.id')->where('programs.id', $progress->program_id)->select('courses.name')->first()->name == 'Arabic') {
+                if ($gameName = GameType::find($test->game->game_type_id)->name_ar)
+                    $gameName = GameType::find($test->game->game_type_id)->name_ar ?? '-';
+                else
+                    $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
             }
-               $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
-            
-            
+            $gameName = GameType::find($test->game->game_type_id)->name ?? '-';
+
+
             // Group by game type
             if (!isset($gameTypesMastery[$gameType->id])) {
                 $gameTypesMastery[$gameType->id] = [
@@ -743,7 +743,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
                 ];
             }
             // Group by skill
-            
+
             // dd($gameType->skills->where('lesson_id', $progress->lesson_id)->unique('skill'),$progress->lesson_id);
             if ($gameType && $gameType->skills->unique()) {
                 foreach ($gameType->skills->where('lesson_id', $progress->lesson_id)->unique('skill') as $gameSkill) {
@@ -869,7 +869,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
                 $lessonData['mastery_percentage'] = $lessonData['total_attempts'] > 0 ? ($lessonData['total_score'] / $lessonData['total_attempts']) : 0;
             }
 
-            $unitData['lessons'] = array_values($unitData['lessons']);  
+            $unitData['lessons'] = array_values($unitData['lessons']);
         }
 
         foreach ($lessonsMastery as &$lessonData) {
@@ -880,7 +880,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
             foreach ($gameTypeData['games'] as &$gameData) {
                 $gameData['mastery_percentage'] = $gameData['total_attempts'] > 0 ? ($gameData['total_score'] / $gameData['total_attempts']) : 0;
             }
-            $gameTypeData['games'] = array_values($gameTypeData['games']); 
+            $gameTypeData['games'] = array_values($gameTypeData['games']);
 
             $gameTypeData['mastery_percentage'] = $gameTypeData['total_attempts'] > 0 ? ($gameTypeData['total_score'] / $gameTypeData['total_attempts']) : 0;
         }
@@ -958,27 +958,27 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
             'program_id' => 'required|integer',
             'student_id' => 'required|integer',
         ]);
-        if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))){
-         if(isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)){
-        $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
-        $latest = Game::find($latest_game)->lesson_id;
-        $latest_lesson = Lesson::find($latest)->name ;
-        $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
-        
-        $data['student_latest'] = $latest_unit . " " . $latest_lesson;
-        }else
-        $data['student_latest'] = '-';
-            
-        }else
-        $data['student_latest'] = '-';
+        if ((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))) {
+            if (isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)) {
+                $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
+                $latest = Game::find($latest_game)->lesson_id;
+                $latest_lesson = Lesson::find($latest)->name;
+                $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
+
+                $data['student_latest'] = $latest_unit . " " . $latest_lesson;
+            } else
+                $data['student_latest'] = '-';
+
+        } else
+            $data['student_latest'] = '-';
         // dd($latest_lesson,$latest_unit);
         $studentId = $request->student_id;
 
         $progressQuery = StudentProgress::where('student_id', $studentId)
-            ->where('program_id', $request->program_id)->where('is_done',1);
+            ->where('program_id', $request->program_id)->where('is_done', 1);
 
         if ($progressQuery->get()->isEmpty())
-            return $this->returnData2('data',[], 'No student progress found .');
+            return $this->returnData2('data', [], 'No student progress found .');
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
             $from_date = Carbon::parse($request->from_date)->startOfDay();
             $to_date = Carbon::parse($request->to_date)->endOfDay();
@@ -1021,7 +1021,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
                 'name' => $course->test_name,
                 'test_id' => $course->test_id,
                 'score' => $course->score,
-                'star' => $course->stars,  
+                'star' => $course->stars,
                 'num_trials' => $numTrials
             ];
 
@@ -1078,30 +1078,30 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
                 ->count();
         }
 
-        $division = StudentProgress::where('student_id', $studentId)->where('program_id',$request->program_id)->where('is_done',1)->count();
+        $division = StudentProgress::where('student_id', $studentId)->where('program_id', $request->program_id)->where('is_done', 1)->count();
         if ($division == 0) {
             $division = 1;
         }
 
         if (!$request->filled('from_date') && !$request->filled('to_date')) {
             $data['reports_percentages'] = [
-                'first_trial' => round((StudentProgress::where('mistake_count', 0)->where('is_done',1)->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
-                    
-                'second_trial' => round((StudentProgress::where('mistake_count', 1)->where('is_done',1)->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
-                'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done',1)->where('student_id', $studentId)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
+                'first_trial' => round((StudentProgress::where('mistake_count', 0)->where('is_done', 1)->where('student_id', $studentId)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100, 2) ?? 0,
+
+                'second_trial' => round((StudentProgress::where('mistake_count', 1)->where('is_done', 1)->where('student_id', $studentId)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100, 2) ?? 0,
+                'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done', 1)->where('student_id', $studentId)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100, 2) ?? 0,
             ];
         } else {
-            $threestars = StudentProgress::where('mistake_count', 0)->where('is_done',1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $threestars = StudentProgress::where('mistake_count', 0)->where('is_done', 1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
-            $twostars = StudentProgress::where('mistake_count', 1)->where('is_done',1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $twostars = StudentProgress::where('mistake_count', 1)->where('is_done', 1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
-            $onestar = StudentProgress::where('mistake_count','>=', 2)->where('is_done',1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $onestar = StudentProgress::where('mistake_count', '>=', 2)->where('is_done', 1)->where('student_id', $studentId)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
 
-            $division = StudentProgress::where('student_id', $studentId)->where('is_done',1)->where('program_id',$request->program_id)
+            $division = StudentProgress::where('student_id', $studentId)->where('is_done', 1)->where('program_id', $request->program_id)
                 ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
 
             if ($division == 0) {
@@ -1130,35 +1130,34 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
         $studentProgress = StudentProgress::where('student_id', $studentId)
             ->where('program_id', $programId)
             ->where('is_done', 1)
-            ;
-        if($studentProgress->get()->isEmpty()){
-            return $this->returnData('data',[], 'No reports are available for this student at the moment.');
+        ;
+        if ($studentProgress->get()->isEmpty()) {
+            return $this->returnData('data', [], 'No reports are available for this student at the moment.');
         }
-        
-        if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))){
-         if(isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)){
-        $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
-        $latest = Game::find($latest_game)->lesson_id;
-        $latest_lesson = Lesson::find($latest)->name ;
-        $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
-        
-        $data['student_latest'] = $latest_unit . " " . $latest_lesson;
-        }else
-        $data['student_latest'] = '-';
-        }
-        else
-        $data['student_latest'] = '-';
+
+        if ((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()))) {
+            if (isset(Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id)->lesson_id)) {
+                $latest_game = StudentDegree::where('student_id', $request->student_id)->orderBy('id', 'desc')->first()->game_id;
+                $latest = Game::find($latest_game)->lesson_id;
+                $latest_lesson = Lesson::find($latest)->name;
+                $latest_unit = Unit::find(Lesson::find($latest)->unit_id)->name;
+
+                $data['student_latest'] = $latest_unit . " " . $latest_lesson;
+            } else
+                $data['student_latest'] = '-';
+        } else
+            $data['student_latest'] = '-';
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
             $fromDate = Carbon::parse($request->from_date)->startOfDay();
             $toDate = Carbon::parse($request->to_date)->endOfDay();
             $studentProgress->whereBetween('created_at', [$fromDate, $toDate])
-            ->get();
+                ->get();
         }
-        
- 
+
+
         $studentProgress = $studentProgress->get();
         if ($studentProgress->isEmpty()) {
-            return $this->returnData('data',[], 'No reports are available for this student at the moment.');
+            return $this->returnData('data', [], 'No reports are available for this student at the moment.');
         }
         $skillsData = [];
         foreach ($studentProgress as $progress) {
@@ -1174,7 +1173,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
                                 continue;
 
                             $skill = $gameSkill->skill;
-                            $skillName = $skill->skill;  
+                            $skillName = $skill->skill;
                             $date = $progress->created_at->format('Y-m-d');
 
                             $currentLevel = 'Introduced';
@@ -1188,8 +1187,8 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
                                 $skillsData[$skillName] = [
                                     'skill_name' => $skillName,
                                     'total_score' => 0,
-                                    'count' => 0, 
-                                    'average_score' => 0, 
+                                    'count' => 0,
+                                    'average_score' => 0,
                                     'current_level' => $currentLevel,
                                     'date' => $date,
                                 ];
@@ -1219,7 +1218,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
             return $this->returnData('data', [], 'There are no reports available for the selected date range.');
         }
 
-        $studentName = User::find($request->student_id)->name; 
+        $studentName = User::find($request->student_id)->name;
         foreach ($skillsData as $skillData) {
             $finalData[] = array_merge(['student_name' => $studentName], $skillData);
         }
@@ -1254,7 +1253,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
         $students = GroupStudent::where('group_id', $groupId)->pluck('student_id');
 
         if ($students->isEmpty()) {
-            return $this->returnData2('data',[], 'This class currently has no students enrolled.');
+            return $this->returnData2('data', [], 'This class currently has no students enrolled.');
         }
 
         // Initialize the query builder for student progress
@@ -1262,7 +1261,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
             ->whereIn('student_id', $students);
 
         if ($progressQuery->get()->isEmpty())
-            return $this->returnData2('data',[], 'No reports are available for this class at the moment.');
+            return $this->returnData2('data', [], 'No reports are available for this class at the moment.');
         if ($request->filled('future') && $request->future != NULL) {
             if ($request->future == 1) {
                 // No additional conditions needed
@@ -1345,9 +1344,9 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
             'pending' => $pendingCount,
         ];
         $data['assignments_percentages'] = [
-            'completed' => round($finishedPercentage,2),
-            'overdue' => round($overduePercentage,2),
-            'pending' => round($pendingPercentage,2),
+            'completed' => round($finishedPercentage, 2),
+            'overdue' => round($overduePercentage, 2),
+            'pending' => round($pendingPercentage, 2),
         ];
         $data['tests'] = StudentAssignmentResource::make($tests);
         $data['test_types'] = TestResource::make($test_types);
@@ -1382,15 +1381,15 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
         $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
 
         if ($students->isEmpty()) {
-            return $this->returnData('data',[], 'This class currently has no students enrolled.');
+            return $this->returnData('data', [], 'This class currently has no students enrolled.');
         }
 
         // Initialize query builder for student progress
         $query = StudentProgress::whereIn('student_id', $students)
-            ->where('program_id', $request->program_id)->where('is_done',1);
+            ->where('program_id', $request->program_id)->where('is_done', 1);
 
         if ($query->get()->isEmpty())
-            return $this->returnData('data',[], 'No reports are available for this class at the moment.');
+            return $this->returnData('data', [], 'No reports are available for this class at the moment.');
         // Apply filters if provided
         if ($request->has('unit_id')) {
             $query->where('unit_id', $request->unit_id);
@@ -1425,7 +1424,7 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
 
 
         if ($student_progress->isEmpty()) {
-            return $this->returnData('data','', 'No reports are available for this class at the moment.');
+            return $this->returnData('data', '', 'No reports are available for this class at the moment.');
         }
         // Process each progress record
         foreach ($student_progress as $progress) {
@@ -1459,12 +1458,12 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
             // Group by lesson
             if (!isset($lessonsMastery[$progress->lesson_id])) {
                 $lessonsMastery[$progress->lesson_id] = [
-                     'lesson_id' => $progress->lesson_id,
+                    'lesson_id' => $progress->lesson_id,
                     'name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name . " | " . Lesson::find($progress->lesson_id)->name,
                     'unit_name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name,
-                    'lesson_name' =>  Lesson::find($progress->lesson_id)->name,
-                    'unit_index' => "U".Unit::find(Lesson::find($progress->lesson_id)->unit_id)->number,
-                    'lesson_index' =>  "L".Lesson::find($progress->lesson_id)->number,
+                    'lesson_name' => Lesson::find($progress->lesson_id)->name,
+                    'unit_index' => "U" . Unit::find(Lesson::find($progress->lesson_id)->unit_id)->number,
+                    'lesson_index' => "L" . Lesson::find($progress->lesson_id)->number,
                     'failed' => 0,
                     'introduced' => 0,
                     'practiced' => 0,
@@ -1715,15 +1714,15 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
     {
         // Get the student IDs for the given group ID
         $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
-         if ($students->isEmpty()) {
-            return $this->returnData2('data',[], 'This class currently has no students enrolled.');
+        if ($students->isEmpty()) {
+            return $this->returnData2('data', [], 'This class currently has no students enrolled.');
         }
         // Initialize query builder with student IDs and program ID
         $progressQuery = StudentProgress::whereIn('student_id', $students)
-            ->where('program_id', $request->program_id)->where('is_done',1);
+            ->where('program_id', $request->program_id)->where('is_done', 1);
 
         if ($progressQuery->get()->isEmpty())
-            return $this->returnData2('data',[], 'No reports are available for this class at the moment.');
+            return $this->returnData2('data', [], 'No reports are available for this class at the moment.');
         if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
             $from_date = Carbon::parse($request->from_date)->startOfDay();
             $to_date = Carbon::parse($request->to_date)->endOfDay();
@@ -1829,34 +1828,34 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
         if ($request->filled('stars')) {
             $data['counts'] = StudentProgress::where('stars', $request->stars)->count();
         } else {
-            $data['counts'] = StudentProgress::whereIn('student_id', $students)->where('is_done',1)
+            $data['counts'] = StudentProgress::whereIn('student_id', $students)->where('is_done', 1)
                 ->where('program_id', $request->program_id)
                 ->count();
         }
 
-        $division = StudentProgress::whereIn('student_id', $students)->where('program_id',$request->program_id)->where('is_done',1)->count();
+        $division = StudentProgress::whereIn('student_id', $students)->where('program_id', $request->program_id)->where('is_done', 1)->count();
         if ($division == 0) {
             $division = 1;
         }
 
         if (!$request->filled('from_date') && !$request->filled('to_date')) {
             $data['reports_percentages'] = [
-                'first_trial' => round((StudentProgress::where('mistake_count', 0)->where('is_done',1)->whereIn('student_id', $students)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
-                'second_trial' => round((StudentProgress::where('mistake_count', 1)->where('is_done',1)->whereIn('student_id', $students)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
-                'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done',1)->whereIn('student_id', $students)
-                    ->where('program_id', $request->program_id)->count() / $division) * 100,2) ?? 0,
+                'first_trial' => round((StudentProgress::where('mistake_count', 0)->where('is_done', 1)->whereIn('student_id', $students)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100, 2) ?? 0,
+                'second_trial' => round((StudentProgress::where('mistake_count', 1)->where('is_done', 1)->whereIn('student_id', $students)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100, 2) ?? 0,
+                'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done', 1)->whereIn('student_id', $students)
+                    ->where('program_id', $request->program_id)->count() / $division) * 100, 2) ?? 0,
             ];
         } else {
-            $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->where('is_done',1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->where('is_done', 1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
-            $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->where('is_done',1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->where('is_done', 1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
-            $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done',1)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+            $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done', 1)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 ->where('program_id', $request->program_id)->count();
 
-            $division = StudentProgress::whereIn('student_id', $students)->where('is_done',1)->where('program_id',$request->program_id)
+            $division = StudentProgress::whereIn('student_id', $students)->where('is_done', 1)->where('program_id', $request->program_id)
                 ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
 
             if ($division == 0) {
@@ -1886,15 +1885,15 @@ if((Game::find(StudentDegree::where('student_id', $request->student_id)->orderBy
 
         // Get the student IDs for the given group ID
         $students = GroupStudent::where('group_id', $groupId)->pluck('student_id');
- if ($students->isEmpty()) {
-            return $this->returnData('data',[], 'This class currently has no students enrolled.');
+        if ($students->isEmpty()) {
+            return $this->returnData('data', [], 'This class currently has no students enrolled.');
         }
         // Initialize an array to store the skills data for each student
         $allStudentsSkillsData = [];
 
         // Loop through each student to retrieve their progress
         foreach ($students as $studentId) {
-            $studentProgressQuery = StudentProgress::where('student_id', $studentId)->where('is_done',1)
+            $studentProgressQuery = StudentProgress::where('student_id', $studentId)->where('is_done', 1)
                 ->where('program_id', $programId);
 
             if ($request->filled(['from_date', 'to_date']) && $request->from_date != null && $request->to_date != null) {
