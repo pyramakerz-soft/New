@@ -1286,6 +1286,11 @@ class TeachersController extends Controller
             $progressQuery->where('program_id', $request->program_id);
         }
 
+        // Filter by assignment ID if provided
+        if ($request->filled('assignment_id') && $request->assignment_id != NULL) {
+            $progressQuery->where('test_id', $request->assignment_id);
+        }
+
         // Execute the query
         $allTests = $progressQuery->orderBy('due_date', 'DESC')->get();
         $totalAllTests = $allTests->count();
