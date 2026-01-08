@@ -34,24 +34,31 @@ class AuthController extends Controller
             return $this->returnValidationError($code, $validate);
         }
         $token = null;
-        if(User::where('role',2)->where('email',$request->email)->count() > 0){
-        if (!$token = JWTAuth::attempt($request->only('email', 'password'))) {
+        if (User::where('role', 2)->where('email', $request->email)->count() > 0) {
+            if (!$token = JWTAuth::attempt($request->only('email', 'password'))) {
+                return response()->json([
+                    "status" => false,
+                    "message" => "Unauthorized"
+                ]);
+            }
+        } else
             return response()->json([
                 "status" => false,
-                "message" => "Unauthorized"
+                "message" => "Wrong Account !"
             ]);
-        }
-    }else
-    return response()->json([
-        "status" => false,
-        "message" => "Wrong Account !"
-    ]);
-    $user = User::where('email',$request->email)->first();
-        return response()->json([
-            "status" => true,
-            "user" => $user,
-            "token" => $token
-        ]);
-    } // end of login
-
+        $user = User::where('email', $request->email)->first();
+        if ($user->is_active == 1) {
+            return response()->json([
+                "status" => true,
+                "user" => $user,
+                "token" => $token
+            ]);
+        } else {
+            return response()->json([
+                "status" => false,
+                "message" => "Account is not active !"
+            ]);
+        } // end of login
+    }
 }
+
