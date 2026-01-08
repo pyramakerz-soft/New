@@ -92,6 +92,14 @@ class AuthController extends Controller
             ]);
         }
 
+        $user = User::where('email', $request->email)->first();
+        if ($user->is_active != 1) {
+            return response()->json([
+                "status" => false,
+                "message" => "Account is not active !"
+            ]);
+        }
+
         $data['user'] = User::with('school')->where('email', $request->email)->first();
         $data['token'] = $token;
         $unreadCount = Notification::where('user_id', auth()->user()->id)
@@ -105,7 +113,7 @@ class AuthController extends Controller
             ->get();
 
         $data['assignments'] = TeacherAssignmentResource::make($studentsDidAss);
-        $user = User::where('email',$request->email)->first();
+        $user = User::where('email', $request->email)->first();
         $user->number_logins += 1;
         $user->last_active = now();
         $user->save();
@@ -174,72 +182,72 @@ class AuthController extends Controller
      *     )
      * )
      */
-   public function loginTeacher(Request $request)
-{
-    $validate = Validator::make($request->all(), [
-        'email' => 'required',
-        'password' => 'required',
-        'role' => 'required',
-    ], [
-        'email.required' => __('app/validation.email_required'),
-        'password.required' => __('app/validation.password_required'),
-        'role.required' => __('app/validation.role_required')
-    ]);
+    public function loginTeacher(Request $request)
+    {
+        $validate = Validator::make($request->all(), [
+            'email' => 'required',
+            'password' => 'required',
+            'role' => 'required',
+        ], [
+            'email.required' => __('app/validation.email_required'),
+            'password.required' => __('app/validation.password_required'),
+            'role.required' => __('app/validation.role_required')
+        ]);
 
-    if ($validate->fails()) {
-        $code = $this->returnCodeAccordingToInput($validate);
-        return $this->returnValidationError($code, $validate);
-    }
+        if ($validate->fails()) {
+            $code = $this->returnCodeAccordingToInput($validate);
+            return $this->returnValidationError($code, $validate);
+        }
 
-    $token = null;
-    if ($request->role == 1) {
-        if (User::where('role', 1)->where('email', $request->email)->count() > 0) {
-            if (!$token = JWTAuth::attempt($request->only('email', 'password'))) {
+        $token = null;
+        if ($request->role == 1) {
+            if (User::where('role', 1)->where('email', $request->email)->count() > 0) {
+                if (!$token = JWTAuth::attempt($request->only('email', 'password'))) {
+                    return response()->json([
+                        "status" => false,
+                        "message" => "Wrong Email or password"
+                    ]);
+                }
+            } else {
                 return response()->json([
                     "status" => false,
-                    "message" => "Wrong Email or password"
+                    "message" => "Wrong Email or password!"
                 ]);
             }
-        } else {
-            return response()->json([
-                "status" => false,
-                "message" => "Wrong Email or password!"
-            ]);
         }
-    }
 
-    $data['user'] = User::with(['school'])->where('email', $request->email)->first();
-    $loc = asset('storage/');
+        $data['user'] = User::with(['school'])->where('email', $request->email)->first();
+        $loc = asset('storage/');
 
-    $data['program_data'] = TeacherProgram::with([
-        'program.units' => function($query) {
-            $query->where('is_active', 1); // Only get active units
-        }, 
-        'program.units.lessons', 
-        'stage'
-    ])
-    ->where('teacher_id', $data['user']->id)
-    ->whereHas('program', function ($query) {
-        $query->where('is_active', 1); // Only get active programs
-    })
-    ->get()
-    ->map(function ($teacherProgram) {
-        // Append program and stage name
-        $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->program->stage->name;
-        $teacherProgram->image = $teacherProgram->program->image;
+        $data['program_data'] = TeacherProgram::with([
+            'program.units' => function ($query) {
+                $query->where('is_active', 1); // Only get active units
+            },
+            'program.units.lessons',
+            'stage'
+        ])
+            ->where('teacher_id', $data['user']->id)
+            ->whereHas('program', function ($query) {
+                $query->where('is_active', 1); // Only get active programs
+            })
+            ->get()
+            ->map(function ($teacherProgram) {
+                // Append program and stage name
+                $teacherProgram->program_name = $teacherProgram->program->name . ' - ' . $teacherProgram->program->stage->name;
+                $teacherProgram->image = $teacherProgram->program->image;
 
-        // Units are already filtered by the query, no need to filter again
-        return $teacherProgram;
-    });
+                // Units are already filtered by the query, no need to filter again
+                return $teacherProgram;
+            });
 
-    $data['token'] = $token;
- $user = User::where('email',$request->email)->first();
+        $data['token'] = $token;
+        $user = User::where('email', $request->email)->first();
         $user->number_logins += 1;
         $user->last_active = now();
 
         $user->save();
-    return $this->returnData('data', $data, 'User Data to update');
-}
+        return $this->returnData('data', $data, 'User Data to update');
+    }
 
 
     /**
@@ -268,11 +276,11 @@ class AuthController extends Controller
         $unreadCount = Notification::where('user_id', auth()->user()->id)
             ->where('is_read', 0)
             ->count();
-            $user = $data['user'];
+        $user = $data['user'];
         $user->last_active = now();
         $user->save();
         $data['user']->count = $unreadCount;
-        
+
         $data['assignments'] = TeacherAssignmentResource::make($studentsDidAss);
         return $this->returnData('data', $data, 'User Data');
     }

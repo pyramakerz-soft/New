@@ -47,18 +47,11 @@ class AuthController extends Controller
                 "message" => "Wrong Account !"
             ]);
         $user = User::where('email', $request->email)->first();
-        if ($user->is_active == 1) {
-            return response()->json([
-                "status" => true,
-                "user" => $user,
-                "token" => $token
-            ]);
-        } else {
-            return response()->json([
-                "status" => false,
-                "message" => "Account is not active !"
-            ]);
-        } // end of login
-    }
-}
+        return response()->json([
+            "status" => true,
+            "user" => $user,
+            "token" => $token
+        ]);
+    } // end of login
 
+}
