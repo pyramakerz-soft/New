@@ -84,7 +84,7 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::get('categories/{id}', [CategoryController::class, 'show']);
     Route::post('categories/{id}/all-data', [CategoryController::class, 'getAllCategoryData']);
     Route::post('/assignments', [AssignmentController::class, 'assign']);
-    
+
     Route::post('/notifications', [StudentController::class, 'getNotification']);
     Route::post('/finishAssignment', [StudentController::class, 'finishAssignment']);
 
@@ -95,14 +95,16 @@ Route::group(['namespace' => 'Api', 'middleware' => 'auth:api'], function () {
     Route::post('/teach-mastery-report', [TeachersController::class, 'masteryReport']);
     Route::post('/teach-trials-report', [TeachersController::class, 'numOfTrialsReport']);
     Route::post('/teach-skill-report', [TeachersController::class, 'skillReport']);
-    
+
     /////////////////////// Classes Reports /////////////////////////////////
 
     Route::post('/class-comp-report', [TeachersController::class, 'classCompletionReport']);
     Route::post('/class-mastery-report', [TeachersController::class, 'classMasteryReport']);
     Route::post('/class-trials-report', [TeachersController::class, 'classNumOfTrialsReport']);
     Route::post('/class-skill-report', [TeachersController::class, 'classSkillReport']);
-});
-Route::post('/assignment-students/{id}', [AssignmentController::class, 'assignmentStudents']);
+    Route::post('/assignment-students/{id}', [AssignmentController::class, 'assignmentStudents']);
     Route::post('/delete-assignment/{id}', [AssignmentController::class, 'deleteAssignment']);
-Route::post('games/duplicate', [\App\Http\Controllers\GameDuplicateController::class, 'duplicate']);
+    // Route::post('games/duplicate', [\App\Http\Controllers\GameDuplicateController::class, 'duplicate']);
+});
+
+Route::post('/upload-audio', [GameController::class, 'uploadAudio']);
