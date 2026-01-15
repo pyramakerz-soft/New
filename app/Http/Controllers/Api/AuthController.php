@@ -218,11 +218,12 @@ class AuthController extends Controller
 
         $data['user'] = User::with(['school'])->where('email', $request->email)->first();
         $loc = asset('storage/');
-
         if ($data['user']->is_active == 0) {
-            return $this->returnError('Your account is not active!');
+            return response()->json([
+                "status" => false,
+                "message" => "Account is not active !"
+            ]);
         }
-
         $data['program_data'] = TeacherProgram::with([
             'program.units' => function ($query) {
                 $query->where('is_active', 1); // Only get active units
@@ -243,6 +244,7 @@ class AuthController extends Controller
                 // Units are already filtered by the query, no need to filter again
                 return $teacherProgram;
             });
+
 
 
         $data['token'] = $token;
@@ -287,6 +289,13 @@ class AuthController extends Controller
         $data['user']->count = $unreadCount;
 
         $data['assignments'] = TeacherAssignmentResource::make($studentsDidAss);
+        if ($data['user']->is_active == 0) {
+            return response()->json([
+                "status" => false,
+                "message" => "Account is not active !"
+            ]);
+        }
+
         return $this->returnData('data', $data, 'User Data');
     }
 
@@ -327,6 +336,12 @@ class AuthController extends Controller
         $user->last_active = now();
         $user->save();
         $data = TeacherResource::make($data);
+        if ($data->is_active != 1) {
+            return response()->json([
+                "status" => false,
+                "message" => "Account is not active !"
+            ]);
+        }
         return $this->returnData('data', $data, 'Teacher Data');
     }
 
